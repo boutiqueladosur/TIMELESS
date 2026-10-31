@@ -1,0 +1,86 @@
+name: Validate TIMELESS hardening
+
+on:
+  push:
+    branches: [security-hardening]
+    paths:
+      - '.github/workflows/validate-hardening.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: security-hardening
+
+      - name: Static integration checks
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          html = Path('index.html').read_text(encoding='utf-8')
+          forbidden = ['docs.google.com/spreadsheets', 'handleSheetResponse', "const SHEET="]
+          for token in forbidden:
+              assert token not in html, f'Legacy Google Sheets token still present: {token}'
+          required = [
+              '@supabase/supabase-js@2',
+              "from('products')",
+              ".eq('is_active',true)",
+              'product_images(image_url,sort_order,is_primary)',
+              'categories(name)',
+              'localStorage',
+              'https://wa.me/',
+          ]
+          for token in required:
+              assert token in html, f'Missing required integration token: {token}'
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, flags=re.S|re.I)
+          inline = '\n'.join(s for s in scripts if s.strip())
+          Path('/tmp/timeless-inline.js').write_text(inline, encoding='utf-8')
+          print('Static checks passed')
+
+      - name: JavaScript syntax check
+        run: node --check /tmp/timeless-inline.js
+
+      - name: Public Supabase REST smoke test
+        shell: python
+        run: |
+          from pathlib import Path
+          import json, re, urllib.request
+          html = Path('index.html').read_text(encoding='utf-8')
+          url = re.search(r"const SUPABASE_URL='([^']+)'", html).group(1)
+          key = re.search(r"const SUPABASE_PUBLISHABLE_KEY='([^']+)'", html).group(1)
+          endpoint = url + '/rest/v1/products?select=id,sku,name,price_clp,sale_price_clp,categories(name),product_images(image_url,sort_order,is_primary)&is_active=eq.true&order=name.asc'
+          req = urllib.request.Request(endpoint, headers={'apikey': key, 'Authorization': 'Bearer ' + key})
+          with urllib.request.urlopen(req, timeout=20) as r:
+              assert r.status == 200
+              rows = json.load(r)
+          assert len(rows) == 2, f'Expected 2 active products, got {len(rows)}'
+          assert all(p.get('name') and p.get('price_clp') is not None for p in rows)
+          assert all(p.get('categories') and p['categories'].get('name') for p in rows)
+          assert all(len(p.get('product_images') or []) == 2 for p in rows)
+          print('Public REST smoke test passed for', len(rows), 'products')
+
+      - name: Verify product image URLs
+        shell: python
+        run: |
+          from pathlib import Path
+          import json, re, urllib.request
+          html = Path('index.html').read_text(encoding='utf-8')
+          url = re.search(r"const SUPABASE_URL='([^']+)'", html).group(1)
+          key = re.search(r"const SUPABASE_PUBLISHABLE_KEY='([^']+)'", html).group(1)
+          endpoint = url + '/rest/v1/product_images?select=image_url&order=sort_order.asc'
+          req = urllib.request.Request(endpoint, headers={'apikey': key, 'Authorization': 'Bearer ' + key})
+          with urllib.request.urlopen(req, timeout=20) as r:
+              images = json.load(r)
+          assert len(images) == 4, f'Expected 4 public images, got {len(images)}'
+          for item in images:
+              image_url = item['image_url']
+              assert image_url.startswith('https://')
+              request = urllib.request.Request(image_url, method='HEAD', headers={'User-Agent':'TIMELESS-validation'})
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  assert 200 <= response.status < 400, (image_url, response.status)
+          print('All product image URLs are reachable')
