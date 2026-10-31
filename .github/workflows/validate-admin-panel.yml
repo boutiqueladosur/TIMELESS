@@ -1,0 +1,45 @@
+name: Validate admin panel
+
+on:
+  push:
+    branches: [admin-panel]
+    paths:
+      - '.github/workflows/validate-admin-panel.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: admin-panel
+      - name: Validate admin HTML and JS
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          html=Path('admin.html').read_text(encoding='utf-8')
+          required=[
+            '@supabase/supabase-js@2.118.0',
+            'signInWithPassword',
+            "app_metadata?.role==='admin'",
+            ".from('products')",
+            ".from('product_images')",
+            ".storage.from(BUCKET).upload",
+            "const BUCKET='product-images'",
+            'getPublicUrl',
+          ]
+          for token in required:
+            assert token in html, f'Missing: {token}'
+          forbidden=['service_role','SUPABASE_SECRET_KEY']
+          for token in forbidden:
+            assert token not in html, f'Forbidden secret token: {token}'
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',html,flags=re.S|re.I)
+          inline='\n'.join(s for s in scripts if s.strip())
+          Path('/tmp/admin.js').write_text(inline,encoding='utf-8')
+          print('Static admin checks passed')
+      - name: JavaScript syntax check
+        run: node --check /tmp/admin.js
