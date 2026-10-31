@@ -7,9 +7,10 @@ Tienda online de accesorios desplegable en GitHub Pages.
 - Frontend: HTML, CSS y JavaScript.
 - Catálogo: Supabase (`products`, `categories`, `product_images`).
 - Carrito: `localStorage` del navegador.
-- Pedidos: Supabase (`orders`, `order_items`) y continuidad por WhatsApp.
+- Pedidos: el cliente arma el pedido en el navegador y lo confirma por WhatsApp.
+- Tablas `orders` y `order_items`: disponibles en Supabase para una etapa posterior de persistencia server-side.
 - Hosting previsto: GitHub Pages.
-- Backend y base de datos: Supabase.
+- Backend y base de datos: Supabase para catálogo, seguridad y futura persistencia de pedidos.
 
 ## Seguridad
 
