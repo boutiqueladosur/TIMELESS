@@ -46,11 +46,14 @@
   <a class="fab" href="https://wa.me/56935707722" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
   <div class="overlay hidden" id="cart-modal"><aside class="drawer"><div class="drawer-head"><h3>Tu pedido</h3><button class="icon-btn" id="close-cart" type="button"><i class="fa-solid fa-xmark"></i></button></div><div class="items" id="cart-items"></div><div class="drawer-foot"><div class="subtotal"><span>Subtotal estimado</span><strong id="total">$0</strong></div><form id="order-form" class="form"><input id="name" required placeholder="Nombre completo *"><input id="location" required placeholder="Ciudad / Dirección *"><input id="phone" placeholder="Teléfono (opcional)"><textarea id="notes" rows="2" placeholder="Notas del pedido"></textarea><button class="send" type="submit"><i class="fa-brands fa-whatsapp"></i> Confirmar por WhatsApp</button></form></div></aside></div>
   <div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (()=>{
 'use strict';
 const WHATSAPP='56935707722';
-const SHEET='1WJKJSqb_Fq44eLWkKNOGtfrD2DW0WQmO99WQ6kWEqt8';
+const SUPABASE_URL='https://nfphzvcwxyfkbucwwlcx.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_DzvTmxOxVWY4LaKNqx2-xA_4RVK2TtS';
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const STORAGE='timeless_cart_v1';
 const PLACEHOLDER='cartera1234.png';
 let data=[],cart=loadCart(),active='todos',toastTimer;
@@ -60,16 +63,16 @@ const key=v=>norm(v).replace(/[^a-z0-9]/g,'');
 const money=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(Number(v)||0);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 function price(v){if(typeof v==='number')return Math.max(0,Math.round(v));let s=String(v??'').replace(/[^\d,.-]/g,'');if(!s)return 0;if((/\.\d{3}$/.test(s)||/,\d{3}$/.test(s)))s=s.replace(/[.,]/g,'');else s=s.replace(',','.');const n=Number(s);return Number.isFinite(n)?Math.max(0,Math.round(n)):0}
-function safeImage(v){let s=String(v||'').trim();if(!s)return'';if(s.includes('github.com')&&s.includes('/blob/'))s=s.replace('github.com','raw.githubusercontent.com').replace('/blob/','/');try{const u=new URL(s,location.href);return ['http:','https:'].includes(u.protocol)?u.href:''}catch{return''}}
+function safeImage(v){let s=String(v||'').trim();if(!s)return'';if(s.includes('github.com')&&s.includes('/blob/'))s=s.replace('github.com','raw.githubusercontent.com').replace('/blob/','/');try{const u=new URL(s,location.href);return u.protocol==='https:'?u.href:''}catch{return''}}
 function prop(o,names){const entries=Object.keys(o||{}).map(k=>[k,key(k)]);for(const n of names){const hit=entries.find(x=>x[1]===key(n));if(hit&&o[hit[0]]!=null)return String(o[hit[0]]).trim()}return''}
 const pid=(p,i=0)=>prop(p,['id','codigo','sku','col_0'])||`prod_${i}`;
 const pname=p=>prop(p,['nombre','name','titulo','producto','articulo'])||'Producto';
-const pprice=p=>prop(p,['precio','price','valor']);
-const pold=p=>prop(p,['precio_anterior','precio anterior','old_price']);
-const pdiscount=p=>prop(p,['descuento','discount']);
-const pcat=p=>prop(p,['categoria','categoría','tipo'])||'General';
-const pdesc=p=>prop(p,['descripcion','descripción','detalle']);
-function images(p){const a=[prop(p,['imagen_1','imagen1','imagen','image','foto','url']),prop(p,['imagen_2','imagen2','foto2']),prop(p,['imagen_3','imagen3','foto3']),prop(p,['imagen_4','imagen4','foto4'])].map(safeImage).filter(Boolean);return [...new Set(a)].length?[...new Set(a)]:[PLACEHOLDER]}
+const pprice=p=>p.sale_price_clp??p.price_clp??prop(p,['precio','price','valor']);
+const pold=p=>p.sale_price_clp!=null&&Number(p.sale_price_clp)<Number(p.price_clp)?p.price_clp:0;
+const pdiscount=p=>{const old=Number(pold(p))||0,cur=Number(pprice(p))||0;return old>cur&&cur>0?`-${Math.round((1-cur/old)*100)}%`:''};
+const pcat=p=>p.categories?.name||p.categoria||prop(p,['categoria','categoría','tipo'])||'General';
+const pdesc=p=>p.description??prop(p,['descripcion','descripción','detalle']);
+function images(p){if(Array.isArray(p.product_images)&&p.product_images.length){const a=[...p.product_images].sort((x,y)=>(Number(y.is_primary)-Number(x.is_primary))||((x.sort_order||0)-(y.sort_order||0))).map(x=>safeImage(x.image_url)).filter(Boolean);if(a.length)return [...new Set(a)]}const a=[prop(p,['imagen_1','imagen1','imagen','image','foto','url']),prop(p,['imagen_2','imagen2','foto2']),prop(p,['imagen_3','imagen3','foto3']),prop(p,['imagen_4','imagen4','foto4'])].map(safeImage).filter(Boolean);return [...new Set(a)].length?[...new Set(a)]:[PLACEHOLDER]}
 function loadCart(){try{return (JSON.parse(localStorage.getItem(STORAGE)||'[]')||[]).filter(Boolean)}catch{return[]}}
 function save(){try{localStorage.setItem(STORAGE,JSON.stringify(cart))}catch{}}
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200)}
@@ -79,8 +82,24 @@ function render(){const list=visible();$('count').textContent=`${list.length} pr
 function add(id){const p=data.find((x,i)=>String(pid(x,i))===String(id));if(!p)return toast('No se encontró el producto.');const i=data.indexOf(p),existing=cart.find(x=>x.id===id);if(existing)existing.qty=Math.min(99,(existing.qty||1)+1);else cart.push({id,name:pname(p),price:price(pprice(p)),image:images(p)[0],qty:1});save();renderCart();toast('Producto agregado al pedido.')}
 function renderCart(){const qty=cart.reduce((s,x)=>s+(x.qty||1),0),total=cart.reduce((s,x)=>s+(Number(x.price)||0)*(x.qty||1),0);$('cart-count').textContent=qty;$('total').textContent=money(total);$('cart-items').innerHTML=cart.length?cart.map(x=>`<div class="cart-row"><img src="${esc(x.image||PLACEHOLDER)}" alt="${esc(x.name)}"><div><div class="cart-name">${esc(x.name)}</div><div class="cart-price">${x.price?money(x.price):'Consultar'}</div><div class="qty"><button data-qty="${esc(x.id)}" data-delta="-1">−</button><span>${x.qty||1}</span><button data-qty="${esc(x.id)}" data-delta="1">+</button></div></div><button class="icon-btn" data-remove="${esc(x.id)}"><i class="fa-solid fa-trash"></i></button></div>`).join(''):'<div class="loader">Tu pedido está vacío.</div>'}
 function openCart(){$('cart-modal').classList.remove('hidden');document.body.style.overflow='hidden'}function closeCart(){$('cart-modal').classList.add('hidden');document.body.style.overflow=''}
-window.handleSheetResponse=r=>{try{const cols=r.table.cols.map(c=>c?(c.label||c.id||''):'');data=r.table.rows.map((row,idx)=>{const o={};(row.c||[]).forEach((cell,i)=>{const k=cols[i]?cols[i].trim():`col_${i}`;o[k]=cell?(cell.f!==undefined?cell.f:(cell.v!==undefined?cell.v:'')):''});if(!o.id&&!o.codigo)o.id=`prod_${idx}`;return o}).filter(p=>pname(p)||pprice(p));$('loader')?.remove();buildCategories();render()}catch(e){console.error(e);$('loader').textContent='No pudimos procesar el catálogo.'}};
-function loadCatalog(){const s=document.createElement('script');s.src=`https://docs.google.com/spreadsheets/d/${encodeURIComponent(SHEET)}/gviz/tq?tqx=out:json;responseHandler:handleSheetResponse`;s.async=true;s.onerror=()=>{$('loader').textContent='No se pudo conectar con el catálogo.'};document.head.appendChild(s)}
+async function loadCatalog(){
+  try{
+    const {data:rows,error}=await supabaseClient
+      .from('products')
+      .select('id,sku,name,description,price_clp,sale_price_clp,is_featured,categories(name),product_images(image_url,sort_order,is_primary)')
+      .eq('is_active',true)
+      .order('is_featured',{ascending:false})
+      .order('name',{ascending:true});
+    if(error)throw error;
+    data=rows||[];
+    $('loader')?.remove();
+    buildCategories();
+    render();
+  }catch(e){
+    console.error('Supabase catalog error',e);
+    $('loader').textContent='No se pudo conectar con el catálogo.';
+  }
+}
 document.addEventListener('click',e=>{const a=e.target.closest('[data-add]');if(a)return add(a.dataset.add);const c=e.target.closest('[data-cat]');if(c){active=c.dataset.cat;buildCategories();return render()}const th=e.target.closest('.thumb');if(th){const card=th.closest('.card');card.querySelector('.main-img').src=th.dataset.image;card.querySelectorAll('.thumb').forEach(b=>b.classList.toggle('active',b===th));return}const q=e.target.closest('[data-qty]');if(q){const x=cart.find(i=>i.id===q.dataset.qty);if(x){x.qty=(x.qty||1)+Number(q.dataset.delta);if(x.qty<=0)cart=cart.filter(i=>i.id!==x.id);save();renderCart()}return}const rm=e.target.closest('[data-remove]');if(rm){cart=cart.filter(i=>i.id!==rm.dataset.remove);save();renderCart()}});
 $('open-cart').addEventListener('click',openCart);$('close-cart').addEventListener('click',closeCart);$('cart-modal').addEventListener('click',e=>{if(e.target===$('cart-modal'))closeCart()});$('search').addEventListener('input',render);$('sort').addEventListener('change',render);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCart()});
 $('order-form').addEventListener('submit',e=>{e.preventDefault();if(!cart.length)return toast('Agrega productos antes de confirmar.');const name=$('name').value.trim(),loc=$('location').value.trim(),phone=$('phone').value.trim(),notes=$('notes').value.trim();if(!name||!loc)return toast('Completa nombre y dirección.');const total=cart.reduce((s,x)=>s+(Number(x.price)||0)*(x.qty||1),0);const lines=['Hola TIMELESS ✨','Quiero confirmar este pedido:','',...cart.map(x=>`• ${x.name} × ${x.qty||1} — ${x.price?money(x.price*(x.qty||1)):'Precio a consultar'}`),'',`Subtotal estimado: ${money(total)}`,'',`Nombre: ${name}`,`Ciudad / Dirección: ${loc}`,phone?`Teléfono: ${phone}`:'',notes?`Notas: ${notes}`:''].filter(Boolean);window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(lines.join('\n'))}`,'_blank','noopener,noreferrer')});
