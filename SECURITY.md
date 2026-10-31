@@ -1,8 +1,8 @@
-# Política de seguridad — ROSEWOOD / TIMELESS
+# Política de seguridad — TIMELESS
 
 ## Alcance
 
-Este repositorio contiene una tienda estática desplegable en GitHub Pages. La aplicación carga el catálogo desde Google Sheets y genera pedidos que el cliente confirma mediante WhatsApp.
+Este repositorio contiene una tienda estática desplegable en GitHub Pages. La aplicación carga el catálogo desde Supabase y genera pedidos que el cliente confirma mediante WhatsApp.
 
 ## Reporte de vulnerabilidades
 
@@ -18,18 +18,18 @@ Para reportar un problema de seguridad, contacta al propietario del repositorio 
 
 ## Manejo de secretos
 
-- No almacenar contraseñas, tokens, claves API o credenciales dentro de HTML, JavaScript, commits, Issues o documentación pública.
-- Los identificadores públicos —por ejemplo un ID de Google Sheet destinado a lectura pública— no deben confundirse con secretos.
-- Si en el futuro se agrega un backend, todo secreto deberá mantenerse exclusivamente en variables de entorno o en el gestor de secretos del proveedor.
+- No almacenar contraseñas, `service_role`, secret keys, tokens privados ni otras credenciales dentro de HTML, JavaScript, commits, Issues o documentación pública.
+- La publishable key de Supabase puede utilizarse en el frontend siempre que las tablas expuestas estén protegidas mediante RLS y políticas correctas.
+- Los secretos de servidor deben mantenerse exclusivamente en variables de entorno o en el gestor de secretos del proveedor.
 - Si un secreto se publica accidentalmente, debe revocarse y rotarse; eliminarlo del último commit no es suficiente.
 
 ## Datos personales
 
-El carrito se conserva localmente en el navegador. Los datos introducidos para confirmar un pedido se utilizan para construir el mensaje de WhatsApp y no deben persistirse en el repositorio ni enviarse a servicios adicionales sin una base y aviso de privacidad adecuados.
+El carrito se conserva localmente en el navegador. Los datos introducidos para confirmar un pedido se utilizan para construir el mensaje de WhatsApp y actualmente no se guardan en las tablas `orders` u `order_items` desde el frontend.
 
 ## Dependencias externas
 
-La aplicación depende de servicios externos como Google Sheets, Google Fonts, Font Awesome y WhatsApp. Toda nueva dependencia debe revisarse por necesidad, origen, permisos y riesgo de cadena de suministro.
+La aplicación depende de servicios externos como Supabase, Google Fonts, Font Awesome, GitHub y WhatsApp. Toda nueva dependencia debe revisarse por necesidad, origen, permisos y riesgo de cadena de suministro.
 
 ## Desarrollo seguro
 
