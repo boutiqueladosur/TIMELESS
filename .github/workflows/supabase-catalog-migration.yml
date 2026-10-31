@@ -19,8 +19,9 @@ jobs:
           fetch-depth: 0
 
       - name: Patch catalog source to Supabase
-        shell: python
+        shell: bash
         run: |
+          python - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
@@ -50,25 +51,26 @@ jobs:
           end_marker = "function loadCatalog(){const s=document.createElement('script');s.src=`https://docs.google.com/spreadsheets/d/${encodeURIComponent(SHEET)}/gviz/tq?tqx=out:json;responseHandler:handleSheetResponse`;s.async=true;s.onerror=()=>{$('loader').textContent='No se pudo conectar con el catálogo.'};document.head.appendChild(s)}"
           end = s.index(end_marker, start) + len(end_marker)
           replacement = """async function loadCatalog(){
-  try{
-    const {data:rows,error}=await supabaseClient
-      .from('products')
-      .select('id,sku,name,description,price_clp,sale_price_clp,is_featured,categories(name),product_images(image_url,sort_order,is_primary)')
-      .eq('is_active',true)
-      .order('is_featured',{ascending:false})
-      .order('name',{ascending:true});
-    if(error)throw error;
-    data=rows||[];
-    $('loader')?.remove();
-    buildCategories();
-    render();
-  }catch(e){
-    console.error('Supabase catalog error',e);
-    $('loader').textContent='No se pudo conectar con el catálogo.';
-  }
-}"""
+            try{
+              const {data:rows,error}=await supabaseClient
+                .from('products')
+                .select('id,sku,name,description,price_clp,sale_price_clp,is_featured,categories(name),product_images(image_url,sort_order,is_primary)')
+                .eq('is_active',true)
+                .order('is_featured',{ascending:false})
+                .order('name',{ascending:true});
+              if(error)throw error;
+              data=rows||[];
+              $('loader')?.remove();
+              buildCategories();
+              render();
+            }catch(e){
+              console.error('Supabase catalog error',e);
+              $('loader').textContent='No se pudo conectar con el catálogo.';
+            }
+          }"""
           s = s[:start] + replacement + s[end:]
           p.write_text(s, encoding='utf-8')
+          PY
 
       - name: Commit migration result
         run: |
