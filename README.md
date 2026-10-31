@@ -1,14 +1,15 @@
-# ROSEWOOD / TIMELESS
+# TIMELESS
 
-Tienda estática de accesorios desplegable en GitHub Pages.
+Tienda online de accesorios desplegable en GitHub Pages.
 
 ## Arquitectura actual
 
-- Frontend: HTML, CSS y JavaScript sin framework.
-- Catálogo: Google Sheets mediante Google Visualization / JSONP.
+- Frontend: HTML, CSS y JavaScript.
+- Catálogo: Supabase (`products`, `categories`, `product_images`).
 - Carrito: `localStorage` del navegador.
-- Pedidos: generación de mensaje y apertura de WhatsApp.
+- Pedidos: Supabase (`orders`, `order_items`) y continuidad por WhatsApp.
 - Hosting previsto: GitHub Pages.
+- Backend y base de datos: Supabase.
 
 ## Seguridad
 
@@ -21,4 +22,4 @@ Los cambios de endurecimiento se desarrollan en la rama `security-hardening` ant
 
 ## Regla principal
 
-No almacenar contraseñas, tokens, claves API privadas ni otros secretos dentro del repositorio público.
+No almacenar contraseñas, tokens, `service_role`, claves API privadas ni otros secretos dentro del repositorio público. El frontend utiliza únicamente la publishable key de Supabase y el acceso a datos se controla con RLS.
