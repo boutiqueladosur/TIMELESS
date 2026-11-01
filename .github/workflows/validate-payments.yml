@@ -1,0 +1,17 @@
+name: Validate payments
+on:
+  push:
+    branches: [payments-reconciliation]
+    paths: ['.github/workflows/validate-payments.yml']
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: payments-reconciliation
+      - run: node --check payments-admin.js
+      - run: node --check admin-tabs.js
+      - run: grep -q 'data-tab="payments"' admin-tabs.js
+      - run: grep -q 'order_payment_summary' payments-admin.js
+      - run: grep -q 'order_payments' payments-admin.js
