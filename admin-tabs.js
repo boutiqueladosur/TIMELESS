@@ -70,6 +70,7 @@ function buildTabs(){
     <button class="admin-tab" type="button" data-tab="products">Productos</button>
     <button class="admin-tab" type="button" data-tab="inventory">Inventario</button>
     <button class="admin-tab" type="button" data-tab="suppliers">Proveedores</button>
+    <button class="admin-tab" type="button" data-tab="purchases">Compras</button>
     <button class="admin-tab" type="button" data-tab="orders">Pedidos</button>
     <button class="admin-tab" type="button" data-tab="settings">Configuración</button>`;
   top.insertAdjacentElement('afterend',nav);
@@ -84,13 +85,16 @@ function buildTabs(){
   const suppliers=makePanel('tab-suppliers','Proveedores','Administra proveedores, contactos y condiciones comerciales.');
   suppliers.dataset.panel='suppliers';
   suppliers.insertAdjacentHTML('beforeend','<div class="empty">Cargando proveedores…</div>');
+  const purchases=makePanel('tab-purchases','Compras','Gestiona órdenes de compra y recepción de mercadería al inventario.');
+  purchases.dataset.panel='purchases';
+  purchases.insertAdjacentHTML('beforeend','<div class="empty">Cargando órdenes de compra…</div>');
   const orders=makePanel('tab-orders','Pedidos','Gestiona pedidos, documentos tributarios, devoluciones, pagos, preparación, despacho y entregas.');
   orders.dataset.panel='orders';
   orders.insertAdjacentHTML('beforeend','<div id="orders-placeholder" class="empty">Cargando gestión de pedidos…</div>');
   const settings=makePanel('tab-settings','Configuración','Ajustes generales de la tienda y canales de atención.');
   settings.dataset.panel='settings';
 
-  main.append(summary,products,inventory,suppliers,orders,settings);
+  main.append(summary,products,inventory,suppliers,purchases,orders,settings);
 
   const stats=main.querySelector('.stats');
   const settingsCard=main.querySelector('.settings-card');
@@ -98,7 +102,7 @@ function buildTabs(){
   const productList=$('products');
 
   if(stats)summary.appendChild(stats);
-  summary.insertAdjacentHTML('beforeend','<div class="summary-actions"><button type="button" class="btn primary" data-go-tab="products">Administrar productos</button><button type="button" class="btn secondary" data-go-tab="inventory">Gestionar inventario</button><button type="button" class="btn secondary" data-go-tab="suppliers">Ver proveedores</button><button type="button" class="btn secondary" data-go-tab="orders">Ver pedidos</button></div>');
+  summary.insertAdjacentHTML('beforeend','<div class="summary-actions"><button type="button" class="btn primary" data-go-tab="products">Administrar productos</button><button type="button" class="btn secondary" data-go-tab="inventory">Gestionar inventario</button><button type="button" class="btn secondary" data-go-tab="suppliers">Ver proveedores</button><button type="button" class="btn secondary" data-go-tab="purchases">Ver compras</button><button type="button" class="btn secondary" data-go-tab="orders">Ver pedidos</button></div>');
   if(toolbar)products.appendChild(toolbar);
   if(productList)products.appendChild(productList);
   if(settingsCard)settings.appendChild(settingsCard);
@@ -112,11 +116,12 @@ function buildTabs(){
 
   loadModule('inventory-admin.js','inventory-admin-module');
   loadModule('suppliers-admin.js','suppliers-admin-module');
+  loadModule('purchases-admin.js','purchases-admin-module');
   loadModule('tax-documents-admin.js','tax-documents-admin-module');
   loadModule('returns-admin.js','returns-admin-module');
 
   let initial='summary';
-  try{const saved=sessionStorage.getItem('timeless_admin_tab');if(['summary','products','inventory','suppliers','orders','settings'].includes(saved))initial=saved}catch{}
+  try{const saved=sessionStorage.getItem('timeless_admin_tab');if(['summary','products','inventory','suppliers','purchases','orders','settings'].includes(saved))initial=saved}catch{}
   activate(initial);
 }
 
