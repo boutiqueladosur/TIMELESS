@@ -1,0 +1,17 @@
+name: Validate order returns
+on:
+  push:
+    branches: [order-returns-ui]
+    paths: ['.github/workflows/validate-order-returns.yml']
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: order-returns-ui
+      - run: node --check returns-admin.js
+      - run: node --check admin-tabs.js
+      - run: grep -q "returns-admin.js" admin-tabs.js
+      - run: grep -q "Registrar devolución" returns-admin.js
+      - run: grep -q "remaining" returns-admin.js
