@@ -11,6 +11,8 @@ jobs:
           ref: security-hardening-2026
       - run: node --check security-admin.js
       - run: node --check admin-tabs.js
+      - run: node --check checkout.js
       - run: grep -q "security-admin.js" admin-tabs.js
       - run: grep -q "challengeAndVerify" security-admin.js
       - run: grep -q "getAuthenticatorAssuranceLevel" security-admin.js
+      - run: grep -q "client_request_id" checkout.js
