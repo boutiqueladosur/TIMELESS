@@ -84,7 +84,7 @@ function buildTabs(){
   const suppliers=makePanel('tab-suppliers','Proveedores','Administra proveedores, contactos y condiciones comerciales.');
   suppliers.dataset.panel='suppliers';
   suppliers.insertAdjacentHTML('beforeend','<div class="empty">Cargando proveedores…</div>');
-  const orders=makePanel('tab-orders','Pedidos','Gestiona pedidos, documentos tributarios, pagos, preparación, despacho y entregas.');
+  const orders=makePanel('tab-orders','Pedidos','Gestiona pedidos, documentos tributarios, devoluciones, pagos, preparación, despacho y entregas.');
   orders.dataset.panel='orders';
   orders.insertAdjacentHTML('beforeend','<div id="orders-placeholder" class="empty">Cargando gestión de pedidos…</div>');
   const settings=makePanel('tab-settings','Configuración','Ajustes generales de la tienda y canales de atención.');
@@ -113,6 +113,7 @@ function buildTabs(){
   loadModule('inventory-admin.js','inventory-admin-module');
   loadModule('suppliers-admin.js','suppliers-admin-module');
   loadModule('tax-documents-admin.js','tax-documents-admin-module');
+  loadModule('returns-admin.js','returns-admin-module');
 
   let initial='summary';
   try{const saved=sessionStorage.getItem('timeless_admin_tab');if(['summary','products','inventory','suppliers','orders','settings'].includes(saved))initial=saved}catch{}
