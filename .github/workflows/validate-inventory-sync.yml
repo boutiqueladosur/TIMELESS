@@ -1,0 +1,15 @@
+name: Validate inventory sync
+on:
+  push:
+    branches: [inventory-sync-fix]
+    paths: ['.github/workflows/validate-inventory-sync.yml']
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: inventory-sync-fix
+      - run: node --check inventory-admin.js
+      - run: grep -q "window.location.reload" inventory-admin.js
+      - run: grep -q "select('id,stock,low_stock_threshold,supplier_id')" inventory-admin.js
