@@ -1,0 +1,22 @@
+name: Validate management suite
+on:
+  push:
+    branches: [management-suite]
+    paths: ['.github/workflows/validate-management-suite.yml']
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: management-suite
+      - run: node --check admin-tabs.js
+      - run: node --check kardex-admin.js
+      - run: node --check expenses-admin.js
+      - run: node --check management-admin.js
+      - run: node --check alerts-admin.js
+      - run: grep -q 'data-tab="management"' admin-tabs.js
+      - run: grep -q 'inventory_kardex' kardex-admin.js
+      - run: grep -q 'operating_expenses' expenses-admin.js
+      - run: grep -q 'management_dashboard' management-admin.js
+      - run: grep -q 'admin_alerts' alerts-admin.js
