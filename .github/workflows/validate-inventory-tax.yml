@@ -1,0 +1,19 @@
+name: Validate inventory and tax modules
+
+on:
+  push:
+    branches: [tax-documents]
+    paths: ['.github/workflows/validate-inventory-tax.yml']
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tax-documents
+      - run: node --check admin-tabs.js
+      - run: node --check inventory-admin.js
+      - run: node --check tax-documents-admin.js
+      - run: grep -q "data-tab=\"inventory\"" admin-tabs.js
+      - run: grep -q "sales_document_number" tax-documents-admin.js
