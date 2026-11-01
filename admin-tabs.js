@@ -75,7 +75,7 @@ function buildTabs(){
     <button class="admin-tab" type="button" data-tab="settings">Configuración</button>`;
   top.insertAdjacentElement('afterend',nav);
 
-  const summary=makePanel('tab-summary','Resumen','Vista general rápida de productos e inventario.');
+  const summary=makePanel('tab-summary','Resumen','Vista general rápida de productos, inventario y rentabilidad.');
   summary.dataset.panel='summary';
   const products=makePanel('tab-products','Productos','Administra catálogo, precios, descuentos, stock e imágenes.');
   products.dataset.panel='products';
@@ -117,6 +117,7 @@ function buildTabs(){
   loadModule('inventory-admin.js','inventory-admin-module');
   loadModule('suppliers-admin.js','suppliers-admin-module');
   loadModule('purchases-admin.js','purchases-admin-module');
+  loadModule('profitability-admin.js','profitability-admin-module');
   loadModule('tax-documents-admin.js','tax-documents-admin-module');
   loadModule('returns-admin.js','returns-admin-module');
 
