@@ -1,0 +1,37 @@
+name: Validate store settings changes
+
+on:
+  push:
+    branches: [store-settings-and-card-layout]
+    paths:
+      - 'index.html'
+      - 'admin.html'
+      - '.github/workflows/validate-store-settings.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: store-settings-and-card-layout
+      - name: Validate storefront and admin JavaScript
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          checks={
+            'index.html':['loadStoreSettings',".from('store_settings')",'id="whatsapp-link"','id="whatsapp-fab"','min-height:650px'],
+            'admin.html':['id="whatsapp-number"','saveWhatsapp',".from('store_settings')",'Guardar WhatsApp']
+          }
+          for file,tokens in checks.items():
+            text=Path(file).read_text(encoding='utf-8')
+            for token in tokens:
+              assert token in text, f'{file}: missing {token}'
+            scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',text,flags=re.S|re.I)
+            Path('/tmp/'+file.replace('.html','.js')).write_text('\n'.join(s for s in scripts if s.strip()),encoding='utf-8')
+      - run: node --check /tmp/index.js
+      - run: node --check /tmp/admin.js
