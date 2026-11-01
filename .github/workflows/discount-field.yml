@@ -1,0 +1,60 @@
+name: Add discount percentage field
+
+on:
+  push:
+    branches: [discount-field]
+    paths:
+      - '.github/workflows/discount-field.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: discount-field
+      - name: Add synchronized discount field
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('admin.html')
+          s=p.read_text(encoding='utf-8')
+          old='<div class="field"><label>Precio oferta CLP</label><input id="sale-price" type="number" min="0" step="1"></div>'
+          new='<div class="field"><label>Precio oferta CLP</label><input id="sale-price" type="number" min="0" step="1"></div><div class="field"><label>Descuento %</label><input id="discount-percent" type="number" min="0" max="100" step="1" placeholder="Ej: 25"><div id="discount-help" class="small muted">Opcional · se calcula automáticamente.</div></div>'
+          assert old in s, 'No se encontró bloque de precio oferta'
+          s=s.replace(old,new,1)
+          anchor="function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2400)}"
+          logic="""function syncDiscountFromPercent(){const normal=Number($('price').value),pct=Number($('discount-percent').value);if(!$('discount-percent').value){$('discount-help').textContent='Opcional · se calcula automáticamente.';return}if(!Number.isFinite(normal)||normal<=0){$('discount-help').textContent='Ingresa primero el precio normal.';return}if(!Number.isFinite(pct)||pct<0||pct>100){$('discount-help').textContent='El descuento debe estar entre 0% y 100%.';return}const sale=Math.round(normal*(1-pct/100));$('sale-price').value=sale;$('discount-help').textContent=`Precio oferta: ${money(sale)} · Ahorras ${money(normal-sale)}`}
+function syncDiscountFromPrice(){const normal=Number($('price').value),raw=$('sale-price').value,sale=Number(raw);if(!raw||!Number.isFinite(normal)||normal<=0||!Number.isFinite(sale)||sale<0||sale>normal){if(!raw)$('discount-percent').value='';return}const pct=Math.round((1-sale/normal)*100);$('discount-percent').value=pct;$('discount-help').textContent=pct>0?`Descuento aplicado: ${pct}% · Ahorras ${money(normal-sale)}`:'Sin descuento aplicado.'}"""
+          assert anchor in s, 'No se encontró función toast'
+          s=s.replace(anchor,anchor+'\n'+logic,1)
+          oldopen="$('sale-price').value=p?.sale_price_clp??'';"
+          newopen="$('sale-price').value=p?.sale_price_clp??'';$('discount-percent').value=(p?.sale_price_clp!=null&&Number(p.price_clp)>0)?Math.round((1-Number(p.sale_price_clp)/Number(p.price_clp))*100):'';"
+          assert oldopen in s, 'No se encontró inicialización de precio oferta'
+          s=s.replace(oldopen,newopen,1)
+          listeners="$('product-form').addEventListener('submit',saveProduct);$('search').addEventListener('input',renderProducts);$('filter').addEventListener('change',renderProducts);"
+          repl=listeners+"$('discount-percent').addEventListener('input',syncDiscountFromPercent);$('sale-price').addEventListener('input',syncDiscountFromPrice);$('price').addEventListener('input',()=>{if($('discount-percent').value)syncDiscountFromPercent();else syncDiscountFromPrice()});"
+          assert listeners in s, 'No se encontró bloque de listeners'
+          s=s.replace(listeners,repl,1)
+          p.write_text(s,encoding='utf-8')
+      - name: Validate JavaScript
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          html=Path('admin.html').read_text(encoding='utf-8')
+          for token in ['id="discount-percent"','syncDiscountFromPercent','syncDiscountFromPrice']:
+            assert token in html, token
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',html,flags=re.S|re.I)
+          Path('/tmp/admin.js').write_text('\n'.join(x for x in scripts if x.strip()),encoding='utf-8')
+      - run: node --check /tmp/admin.js
+      - name: Commit panel change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin.html
+          git commit -m "Add synchronized discount percentage field"
+          git push origin HEAD:discount-field
