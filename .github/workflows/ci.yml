@@ -37,9 +37,12 @@ jobs:
       - name: Verify checkout uses protected order endpoint
         run: |
           grep -q 'functions/v1/create-order' checkout.js
-          grep -q 'get_public_stock_availability' checkout.js
-      - name: Verify admin security modules
+          grep -q 'groupedCart' checkout.js
+          grep -q 'create_order_atomic' supabase/functions/create-order/index.ts
+          grep -q 'consume_order_rate_limit' supabase/functions/create-order/index.ts
+      - name: Verify admin security and operations modules
         run: |
           grep -q 'session-idle.js' admin-tabs.js
           grep -q 'audit-admin.js' admin-tabs.js
           grep -q 'inventory_availability' inventory-admin.js
+          grep -q 'data-reverse-payment' payments-admin.js
