@@ -23,6 +23,14 @@ function injectStyles(){
   document.head.appendChild(style);
 }
 
+function loadModule(src,id){
+  if(document.getElementById(id))return;
+  const script=document.createElement('script');
+  script.id=id;
+  script.src=src;
+  document.body.appendChild(script);
+}
+
 function makePanel(id,title,description){
   const panel=document.createElement('section');
   panel.id=id;
@@ -60,6 +68,7 @@ function buildTabs(){
   nav.innerHTML=`
     <button class="admin-tab" type="button" data-tab="summary">Resumen</button>
     <button class="admin-tab" type="button" data-tab="products">Productos</button>
+    <button class="admin-tab" type="button" data-tab="inventory">Inventario</button>
     <button class="admin-tab" type="button" data-tab="orders">Pedidos</button>
     <button class="admin-tab" type="button" data-tab="settings">Configuración</button>`;
   top.insertAdjacentElement('afterend',nav);
@@ -68,13 +77,16 @@ function buildTabs(){
   summary.dataset.panel='summary';
   const products=makePanel('tab-products','Productos','Administra catálogo, precios, descuentos, stock e imágenes.');
   products.dataset.panel='products';
-  const orders=makePanel('tab-orders','Pedidos','Gestiona pedidos, pagos, preparación, despacho y entregas.');
+  const inventory=makePanel('tab-inventory','Inventario','Controla existencias y alertas de stock desde una vista dedicada.');
+  inventory.dataset.panel='inventory';
+  inventory.insertAdjacentHTML('beforeend','<div class="empty">Cargando inventario…</div>');
+  const orders=makePanel('tab-orders','Pedidos','Gestiona pedidos, documentos tributarios, pagos, preparación, despacho y entregas.');
   orders.dataset.panel='orders';
   orders.insertAdjacentHTML('beforeend','<div id="orders-placeholder" class="empty">Cargando gestión de pedidos…</div>');
   const settings=makePanel('tab-settings','Configuración','Ajustes generales de la tienda y canales de atención.');
   settings.dataset.panel='settings';
 
-  main.append(summary,products,orders,settings);
+  main.append(summary,products,inventory,orders,settings);
 
   const stats=main.querySelector('.stats');
   const settingsCard=main.querySelector('.settings-card');
@@ -82,7 +94,7 @@ function buildTabs(){
   const productList=$('products');
 
   if(stats)summary.appendChild(stats);
-  summary.insertAdjacentHTML('beforeend','<div class="summary-actions"><button type="button" class="btn primary" data-go-tab="products">Administrar productos</button><button type="button" class="btn secondary" data-go-tab="orders">Ver pedidos</button></div>');
+  summary.insertAdjacentHTML('beforeend','<div class="summary-actions"><button type="button" class="btn primary" data-go-tab="products">Administrar productos</button><button type="button" class="btn secondary" data-go-tab="inventory">Gestionar inventario</button><button type="button" class="btn secondary" data-go-tab="orders">Ver pedidos</button></div>');
   if(toolbar)products.appendChild(toolbar);
   if(productList)products.appendChild(productList);
   if(settingsCard)settings.appendChild(settingsCard);
@@ -94,8 +106,11 @@ function buildTabs(){
   const observer=new MutationObserver(moveOrders);
   observer.observe(main,{childList:true,subtree:true});
 
+  loadModule('inventory-admin.js','inventory-admin-module');
+  loadModule('tax-documents-admin.js','tax-documents-admin-module');
+
   let initial='summary';
-  try{const saved=sessionStorage.getItem('timeless_admin_tab');if(['summary','products','orders','settings'].includes(saved))initial=saved}catch{}
+  try{const saved=sessionStorage.getItem('timeless_admin_tab');if(['summary','products','inventory','orders','settings'].includes(saved))initial=saved}catch{}
   activate(initial);
 }
 
