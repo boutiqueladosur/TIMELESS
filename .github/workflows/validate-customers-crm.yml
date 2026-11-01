@@ -1,0 +1,17 @@
+name: Validate customer CRM
+on:
+  push:
+    branches: [customers-crm]
+    paths: ['.github/workflows/validate-customers-crm.yml']
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: customers-crm
+      - run: node --check customers-admin.js
+      - run: node --check admin-tabs.js
+      - run: grep -q 'data-tab="customers"' admin-tabs.js
+      - run: grep -q 'customer_crm_summary' customers-admin.js
+      - run: grep -q 'Ver ficha' customers-admin.js
