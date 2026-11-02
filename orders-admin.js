@@ -7,135 +7,18 @@ const money=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',ma
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const fmt=d=>d?new Intl.DateTimeFormat('es-CL',{dateStyle:'medium',timeStyle:'short'}).format(new Date(d)):'';
 const statusLabels={pending:'Nuevo',payment_pending:'Pago pendiente',paid:'Confirmado',preparing:'Preparando',shipped:'En ruta',delivered:'Entregado',cancelled:'Cancelado',refunded:'Reembolsado'};
-const paymentLabels={pending:'Pendiente',authorized:'Autorizado',paid:'Pagado',failed:'Fallido',cancelled:'Cancelado',refunded:'Reembolsado'};
+const paymentLabels={pending:'Pendiente',authorized:'Abono parcial',paid:'Pagado',failed:'Fallido',cancelled:'Cancelado',refunded:'Reembolsado'};
 let orders=[];
-
-function injectStyles(){
-  const st=document.createElement('style');
-  st.textContent=`
-  .orders-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin:0 0 18px}
-  .orders-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-  .orders-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.orders-tools input,.orders-tools select{border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff}.orders-tools input[type="search"]{min-width:260px;flex:1}.orders-filter-count{font-size:12px;color:var(--muted);margin:8px 0 12px}
-  .order-list{display:grid;gap:12px}.order-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}
-  .order-top{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:start}.order-number{font-weight:800}.order-meta{font-size:12px;color:var(--muted);margin-top:4px}
-  .order-items{margin:12px 0;padding:10px;background:#faf8f5;border-radius:10px;font-size:13px}.order-items div{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
-  .order-fields{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.order-fields .field{margin:0}.order-fields input,.order-fields select{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff}
-  .order-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:12px}.wa-order{background:#25d366;color:#fff;text-decoration:none}
-  .order-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#f0ece7;font-size:11px;font-weight:700}.order-badge.ok{background:#e9f6ef;color:var(--ok)}
-  .orders-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.orders-stat{border:1px solid var(--line);border-radius:12px;padding:10px}.orders-stat strong{display:block;font-size:20px}
-  @media(max-width:900px){.order-fields{grid-template-columns:1fr 1fr}.order-top{grid-template-columns:1fr}.orders-stats{grid-template-columns:1fr 1fr}.orders-tools input[type="search"]{min-width:100%;width:100%}}
-  @media(max-width:520px){.order-fields{grid-template-columns:1fr}.orders-tools>*{width:100%}}
-  `;
-  document.head.appendChild(st);
-}
-
-function buildUI(){
-  if(document.getElementById('orders-management'))return;
-  const main=document.querySelector('#app-view main'); if(!main)return;
-  const section=document.createElement('section');
-  section.id='orders-management'; section.className='orders-card';
-  section.innerHTML=`<div class="orders-head"><div><strong>Pedidos y entregas</strong><div class="muted small">Filtra y gestiona pedidos por estado, pago y fecha.</div></div><button id="refresh-orders" class="btn secondary" type="button">Actualizar</button></div>
-  <div class="orders-stats"><div class="orders-stat"><span class="small muted">Nuevos</span><strong id="orders-new">0</strong></div><div class="orders-stat"><span class="small muted">Preparando</span><strong id="orders-preparing">0</strong></div><div class="orders-stat"><span class="small muted">En ruta</span><strong id="orders-shipped">0</strong></div><div class="orders-stat"><span class="small muted">Entregados</span><strong id="orders-delivered">0</strong></div></div>
-  <div class="orders-tools">
-    <input id="order-search" type="search" placeholder="Cliente, teléfono o N° pedido">
-    <select id="order-filter"><option value="all">Todos los estados</option>${Object.entries(statusLabels).map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select>
-    <select id="payment-filter"><option value="all">Todos los pagos</option>${Object.entries(paymentLabels).map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select>
-    <select id="date-filter"><option value="all">Todas las fechas</option><option value="today">Hoy</option><option value="7d">Últimos 7 días</option><option value="30d">Últimos 30 días</option><option value="month">Este mes</option></select>
-    <select id="order-sort"><option value="newest">Más recientes</option><option value="oldest">Más antiguos</option><option value="high">Mayor total</option><option value="low">Menor total</option></select>
-    <button id="clear-order-filters" class="btn secondary" type="button">Limpiar filtros</button>
-  </div>
-  <div id="orders-filter-count" class="orders-filter-count"></div>
-  <div id="orders-list" class="order-list"><div class="empty">Cargando pedidos…</div></div>`;
-  const settings=main.querySelector('.settings-card');
-  if(settings)settings.insertAdjacentElement('afterend',section);else main.prepend(section);
-  document.getElementById('refresh-orders').addEventListener('click',loadOrders);
-  ['order-search','order-filter','payment-filter','date-filter','order-sort'].forEach(id=>document.getElementById(id).addEventListener(id==='order-search'?'input':'change',renderOrders));
-  document.getElementById('clear-order-filters').addEventListener('click',clearFilters);
-  section.addEventListener('click',handleClick);
-}
-
-async function isAdmin(){
-  const {data:{user}}=await db.auth.getUser();
-  return user?.app_metadata?.role==='admin';
-}
-
-async function loadOrders(){
-  if(!(await isAdmin()))return;
-  const list=document.getElementById('orders-list'); if(list)list.innerHTML='<div class="empty">Cargando pedidos…</div>';
-  const {data,error}=await db.from('orders').select('id,order_number,customer_name,customer_phone,shipping_address,customer_notes,status,payment_status,subtotal_clp,shipping_clp,discount_clp,total_clp,source,shipping_provider,tracking_number,estimated_delivery_at,delivered_at,created_at,updated_at,order_items(id,sku,product_name,quantity,unit_price_clp,line_total_clp)').order('created_at',{ascending:false}).limit(200);
-  if(error){console.error(error);if(list)list.innerHTML='<div class="empty">No se pudieron cargar los pedidos.</div>';return}
-  orders=data||[];renderOrders();
-}
-
-function dateMatches(createdAt,filter){
-  if(filter==='all')return true;
-  const d=new Date(createdAt); if(Number.isNaN(d.getTime()))return false;
-  const now=new Date();
-  if(filter==='today')return d.toDateString()===now.toDateString();
-  if(filter==='month')return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
-  const days=filter==='7d'?7:filter==='30d'?30:null;
-  if(days){const start=new Date(now);start.setHours(0,0,0,0);start.setDate(start.getDate()-(days-1));return d>=start&&d<=now}
-  return true;
-}
-
-function filteredOrders(){
-  const q=(document.getElementById('order-search')?.value||'').trim().toLowerCase();
-  const status=document.getElementById('order-filter')?.value||'all';
-  const payment=document.getElementById('payment-filter')?.value||'all';
-  const date=document.getElementById('date-filter')?.value||'all';
-  const sort=document.getElementById('order-sort')?.value||'newest';
-  const rows=orders.filter(o=>
-    (status==='all'||o.status===status)&&
-    (payment==='all'||o.payment_status===payment)&&
-    dateMatches(o.created_at,date)&&
-    (!q||`${o.order_number} ${o.customer_name} ${o.customer_phone}`.toLowerCase().includes(q))
-  );
-  rows.sort((a,b)=>{
-    if(sort==='oldest')return new Date(a.created_at)-new Date(b.created_at);
-    if(sort==='high')return Number(b.total_clp||0)-Number(a.total_clp||0);
-    if(sort==='low')return Number(a.total_clp||0)-Number(b.total_clp||0);
-    return new Date(b.created_at)-new Date(a.created_at);
-  });
-  return rows;
-}
-
-function clearFilters(){
-  document.getElementById('order-search').value='';
-  document.getElementById('order-filter').value='all';
-  document.getElementById('payment-filter').value='all';
-  document.getElementById('date-filter').value='all';
-  document.getElementById('order-sort').value='newest';
-  renderOrders();
-}
-
-function renderOrders(){
-  const list=document.getElementById('orders-list');if(!list)return;
-  document.getElementById('orders-new').textContent=orders.filter(o=>o.status==='pending').length;
-  document.getElementById('orders-preparing').textContent=orders.filter(o=>o.status==='preparing').length;
-  document.getElementById('orders-shipped').textContent=orders.filter(o=>o.status==='shipped').length;
-  document.getElementById('orders-delivered').textContent=orders.filter(o=>o.status==='delivered').length;
-  const rows=filteredOrders();
-  document.getElementById('orders-filter-count').textContent=`Mostrando ${rows.length} de ${orders.length} pedido${orders.length===1?'':'s'}.`;
-  list.innerHTML=rows.length?rows.map(o=>{
-    const items=(o.order_items||[]).map(i=>`<div><span>${esc(i.product_name)} × ${i.quantity}</span><strong>${money(i.line_total_clp)}</strong></div>`).join('');
-    const tel=String(o.customer_phone||'').replace(/\D/g,'');
-    const estimated=o.estimated_delivery_at?new Date(o.estimated_delivery_at).toISOString().slice(0,16):'';
-    return `<article class="order-card" data-order-id="${esc(o.id)}"><div class="order-top"><div><div class="order-number">${esc(o.order_number)}</div><div class="order-meta">${esc(o.customer_name)} · ${esc(o.customer_phone)} · ${fmt(o.created_at)}</div><div class="order-meta">${esc(o.shipping_address||'Sin dirección')}</div>${o.customer_notes?`<div class="order-meta">Nota: ${esc(o.customer_notes)}</div>`:''}</div><span class="order-badge ${o.status==='delivered'?'ok':''}">${esc(statusLabels[o.status]||o.status)}</span><strong>${money(o.total_clp)}</strong></div><div class="order-items">${items||'<div>Sin ítems</div>'}</div><div class="order-fields"><div class="field"><label>Estado pedido</label><select data-field="status">${Object.entries(statusLabels).map(([v,l])=>`<option value="${v}" ${o.status===v?'selected':''}>${l}</option>`).join('')}</select></div><div class="field"><label>Pago</label><select data-field="payment_status">${Object.entries(paymentLabels).map(([v,l])=>`<option value="${v}" ${o.payment_status===v?'selected':''}>${l}</option>`).join('')}</select></div><div class="field"><label>Transportista</label><input data-field="shipping_provider" value="${esc(o.shipping_provider||'')}" placeholder="Chilexpress, Starken..."></div><div class="field"><label>Seguimiento</label><input data-field="tracking_number" value="${esc(o.tracking_number||'')}" placeholder="N° seguimiento"></div><div class="field"><label>Entrega estimada</label><input data-field="estimated_delivery_at" type="datetime-local" value="${esc(estimated)}"></div></div><div class="order-actions">${tel?`<a class="btn wa-order" target="_blank" rel="noopener" href="https://wa.me/${tel}">WhatsApp cliente</a>`:''}<button class="btn primary" type="button" data-save-order>Guardar cambios</button></div></article>`;
-  }).join(''):'<div class="empty">No hay pedidos que coincidan con los filtros seleccionados.</div>';
-}
-
-async function handleClick(e){
-  const btn=e.target.closest('[data-save-order]');if(!btn)return;
-  const card=btn.closest('[data-order-id]');const id=card?.dataset.orderId;if(!id)return;
-  const value=name=>card.querySelector(`[data-field="${name}"]`)?.value||'';
-  const status=value('status'), payment=value('payment_status');
-  const payload={status,payment_status:payment,shipping_provider:value('shipping_provider').trim()||null,tracking_number:value('tracking_number').trim()||null,estimated_delivery_at:value('estimated_delivery_at')?new Date(value('estimated_delivery_at')).toISOString():null,updated_at:new Date().toISOString()};
-  if(status==='delivered')payload.delivered_at=new Date().toISOString();
-  btn.disabled=true;
-  try{const {error}=await db.from('orders').update(payload).eq('id',id);if(error)throw error;btn.textContent='Guardado ✓';setTimeout(()=>btn.textContent='Guardar cambios',1200);await loadOrders();}
-  catch(err){console.error(err);btn.textContent='Error';setTimeout(()=>btn.textContent='Guardar cambios',1400)}finally{btn.disabled=false}
-}
-
-async function init(){injectStyles();buildUI();if(await isAdmin())loadOrders();db.auth.onAuthStateChange(async()=>{if(await isAdmin()){buildUI();loadOrders();}})}
+function changed(scope){document.dispatchEvent(new CustomEvent('timeless:data-changed',{detail:{scope}}))}
+function injectStyles(){const st=document.createElement('style');st.textContent=`.orders-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin:0 0 18px}.orders-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}.orders-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.orders-tools input,.orders-tools select{border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff}.orders-tools input[type="search"]{min-width:260px;flex:1}.orders-filter-count{font-size:12px;color:var(--muted);margin:8px 0 12px}.order-list{display:grid;gap:12px}.order-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}.order-top{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:start}.order-number{font-weight:800}.order-meta{font-size:12px;color:var(--muted);margin-top:4px}.order-items{margin:12px 0;padding:10px;background:#faf8f5;border-radius:10px;font-size:13px}.order-items div{display:flex;justify-content:space-between;gap:12px;padding:4px 0}.order-fields{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.order-fields .field{margin:0}.order-fields input,.order-fields select{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff}.order-readonly{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#f7f5f2;font-size:13px;min-height:39px}.order-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:12px}.wa-order{background:#25d366;color:#fff;text-decoration:none}.order-badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#f0ece7;font-size:11px;font-weight:700}.order-badge.ok{background:#e9f6ef;color:var(--ok)}.orders-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.orders-stat{border:1px solid var(--line);border-radius:12px;padding:10px}.orders-stat strong{display:block;font-size:20px}@media(max-width:900px){.order-fields{grid-template-columns:1fr 1fr}.order-top{grid-template-columns:1fr}.orders-stats{grid-template-columns:1fr 1fr}.orders-tools input[type="search"]{min-width:100%;width:100%}}@media(max-width:520px){.order-fields{grid-template-columns:1fr}.orders-tools>*{width:100%}}`;document.head.appendChild(st)}
+function buildUI(){if(document.getElementById('orders-management'))return;const main=document.querySelector('#app-view main');if(!main)return;const section=document.createElement('section');section.id='orders-management';section.className='orders-card';section.innerHTML=`<div class="orders-head"><div><strong>Pedidos y entregas</strong><div class="muted small">El estado de pago es calculado desde el módulo Pagos y no se modifica manualmente aquí.</div></div><button id="refresh-orders" class="btn secondary" type="button">Actualizar</button></div><div class="orders-stats"><div class="orders-stat"><span class="small muted">Nuevos</span><strong id="orders-new">0</strong></div><div class="orders-stat"><span class="small muted">Preparando</span><strong id="orders-preparing">0</strong></div><div class="orders-stat"><span class="small muted">En ruta</span><strong id="orders-shipped">0</strong></div><div class="orders-stat"><span class="small muted">Entregados</span><strong id="orders-delivered">0</strong></div></div><div class="orders-tools"><input id="order-search" type="search" placeholder="Cliente, teléfono o N° pedido"><select id="order-filter"><option value="all">Todos los estados</option>${Object.entries(statusLabels).map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select><select id="payment-filter"><option value="all">Todos los pagos</option>${Object.entries(paymentLabels).map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select><select id="date-filter"><option value="all">Todas las fechas</option><option value="today">Hoy</option><option value="7d">Últimos 7 días</option><option value="30d">Últimos 30 días</option><option value="month">Este mes</option></select><select id="order-sort"><option value="newest">Más recientes</option><option value="oldest">Más antiguos</option><option value="high">Mayor total</option><option value="low">Menor total</option></select><button id="clear-order-filters" class="btn secondary" type="button">Limpiar filtros</button></div><div id="orders-filter-count" class="orders-filter-count"></div><div id="orders-list" class="order-list"><div class="empty">Cargando pedidos…</div></div>`;const settings=main.querySelector('.settings-card');if(settings)settings.insertAdjacentElement('afterend',section);else main.prepend(section);document.getElementById('refresh-orders').addEventListener('click',loadOrders);['order-search','order-filter','payment-filter','date-filter','order-sort'].forEach(id=>document.getElementById(id).addEventListener(id==='order-search'?'input':'change',renderOrders));document.getElementById('clear-order-filters').addEventListener('click',clearFilters);section.addEventListener('click',handleClick)}
+async function isAdmin(){const{data:{user}}=await db.auth.getUser();return ['owner','admin','manager','sales'].includes(user?.app_metadata?.role)}
+async function loadOrders(){if(!(await isAdmin()))return;const list=document.getElementById('orders-list');if(list)list.innerHTML='<div class="empty">Cargando pedidos…</div>';const{data,error}=await db.from('orders').select('id,order_number,customer_name,customer_phone,shipping_address,customer_notes,status,payment_status,paid_amount_clp,balance_due_clp,subtotal_clp,shipping_clp,discount_clp,total_clp,source,shipping_provider,tracking_number,estimated_delivery_at,delivered_at,shipping_status,created_at,updated_at,order_items(id,sku,product_name,quantity,unit_price_clp,line_total_clp)').order('created_at',{ascending:false}).limit(300);if(error){console.error(error);if(list)list.innerHTML='<div class="empty">No se pudieron cargar los pedidos.</div>';return}orders=data||[];renderOrders()}
+function dateMatches(createdAt,filter){if(filter==='all')return true;const d=new Date(createdAt);if(Number.isNaN(d.getTime()))return false;const now=new Date();if(filter==='today')return d.toDateString()===now.toDateString();if(filter==='month')return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();const days=filter==='7d'?7:filter==='30d'?30:null;if(days){const start=new Date(now);start.setHours(0,0,0,0);start.setDate(start.getDate()-(days-1));return d>=start&&d<=now}return true}
+function filteredOrders(){const q=(document.getElementById('order-search')?.value||'').trim().toLowerCase(),status=document.getElementById('order-filter')?.value||'all',payment=document.getElementById('payment-filter')?.value||'all',date=document.getElementById('date-filter')?.value||'all',sort=document.getElementById('order-sort')?.value||'newest';const rows=orders.filter(o=>(status==='all'||o.status===status)&&(payment==='all'||o.payment_status===payment)&&dateMatches(o.created_at,date)&&(!q||`${o.order_number} ${o.customer_name} ${o.customer_phone}`.toLowerCase().includes(q)));rows.sort((a,b)=>sort==='oldest'?new Date(a.created_at)-new Date(b.created_at):sort==='high'?Number(b.total_clp||0)-Number(a.total_clp||0):sort==='low'?Number(a.total_clp||0)-Number(b.total_clp||0):new Date(b.created_at)-new Date(a.created_at));return rows}
+function clearFilters(){document.getElementById('order-search').value='';document.getElementById('order-filter').value='all';document.getElementById('payment-filter').value='all';document.getElementById('date-filter').value='all';document.getElementById('order-sort').value='newest';renderOrders()}
+function renderOrders(){const list=document.getElementById('orders-list');if(!list)return;document.getElementById('orders-new').textContent=orders.filter(o=>o.status==='pending').length;document.getElementById('orders-preparing').textContent=orders.filter(o=>o.status==='preparing').length;document.getElementById('orders-shipped').textContent=orders.filter(o=>o.status==='shipped').length;document.getElementById('orders-delivered').textContent=orders.filter(o=>o.status==='delivered').length;const rows=filteredOrders();document.getElementById('orders-filter-count').textContent=`Mostrando ${rows.length} de ${orders.length} pedido${orders.length===1?'':'s'}.`;list.innerHTML=rows.length?rows.map(o=>{const items=(o.order_items||[]).map(i=>`<div><span>${esc(i.product_name)} × ${i.quantity}</span><strong>${money(i.line_total_clp)}</strong></div>`).join(''),tel=String(o.customer_phone||'').replace(/\D/g,''),estimated=o.estimated_delivery_at?new Date(o.estimated_delivery_at).toISOString().slice(0,16):'';return `<article class="order-card" data-order-id="${esc(o.id)}"><div class="order-top"><div><div class="order-number">${esc(o.order_number)}</div><div class="order-meta">${esc(o.customer_name)} · ${esc(o.customer_phone)} · ${fmt(o.created_at)}</div><div class="order-meta">${esc(o.shipping_address||'Sin dirección')}</div>${o.customer_notes?`<div class="order-meta">Nota: ${esc(o.customer_notes)}</div>`:''}</div><span class="order-badge ${o.status==='delivered'?'ok':''}">${esc(statusLabels[o.status]||o.status)}</span><strong>${money(o.total_clp)}</strong></div><div class="order-items">${items||'<div>Sin ítems</div>'}</div><div class="order-fields"><div class="field"><label>Estado pedido</label><select data-field="status">${Object.entries(statusLabels).map(([v,l])=>`<option value="${v}" ${o.status===v?'selected':''}>${l}</option>`).join('')}</select></div><div class="field"><label>Pago</label><div class="order-readonly"><strong>${esc(paymentLabels[o.payment_status]||o.payment_status)}</strong><div class="muted small">Pagado ${money(o.paid_amount_clp)} · Saldo ${money(o.balance_due_clp)}</div></div></div><div class="field"><label>Transportista</label><input data-field="shipping_provider" value="${esc(o.shipping_provider||'')}" placeholder="Chilexpress, Starken..."></div><div class="field"><label>Seguimiento</label><input data-field="tracking_number" value="${esc(o.tracking_number||'')}" placeholder="N° seguimiento"></div><div class="field"><label>Entrega estimada</label><input data-field="estimated_delivery_at" type="datetime-local" value="${esc(estimated)}"></div></div><div class="order-actions">${tel?`<a class="btn wa-order" target="_blank" rel="noopener" href="https://wa.me/${tel}">WhatsApp cliente</a>`:''}<button class="btn primary" type="button" data-save-order>Guardar cambios</button></div></article>`}).join(''):'<div class="empty">No hay pedidos que coincidan con los filtros seleccionados.</div>'}
+async function handleClick(e){const btn=e.target.closest('[data-save-order]');if(!btn)return;const card=btn.closest('[data-order-id]'),id=card?.dataset.orderId;if(!id)return;const value=name=>card.querySelector(`[data-field="${name}"]`)?.value||'',status=value('status');const payload={status,shipping_provider:value('shipping_provider').trim()||null,tracking_number:value('tracking_number').trim()||null,estimated_delivery_at:value('estimated_delivery_at')?new Date(value('estimated_delivery_at')).toISOString():null,updated_at:new Date().toISOString()};if(status==='delivered')payload.delivered_at=new Date().toISOString();btn.disabled=true;try{const{error}=await db.from('orders').update(payload).eq('id',id);if(error)throw error;btn.textContent='Guardado ✓';await loadOrders();changed('orders')}catch(err){console.error(err);btn.textContent='Error';alert(err.message||'No se pudieron guardar los cambios.')}finally{setTimeout(()=>btn.textContent='Guardar cambios',1200);btn.disabled=false}}
+async function init(){injectStyles();buildUI();if(await isAdmin())loadOrders();db.auth.onAuthStateChange(async()=>{if(await isAdmin()){buildUI();loadOrders()}});document.addEventListener('timeless:data-changed',e=>{if(e.detail?.scope!=='orders')loadOrders()})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
