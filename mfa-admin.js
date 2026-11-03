@@ -39,12 +39,14 @@ function requiresFreshGate(session){const id=sessionId(session);return !!id&&ver
 function setAppVisible(visible){const app=$('app-view');if(!app)return;app.classList.toggle('hidden',!visible)}
 
 async function authState(){
-  const [{data:{session}},factors,aal]=await Promise.all([
-    client.auth.getSession(),
+  const {data:sessionData,error:sessionError}=await client.auth.getSession();
+  if(sessionError)throw sessionError;
+  const session=sessionData?.session;
+  if(!session)return null;
+  const [factors,aal]=await Promise.all([
     client.auth.mfa.listFactors(),
     client.auth.mfa.getAuthenticatorAssuranceLevel()
   ]);
-  if(!session)throw new Error('Sesión no disponible');
   if(factors.error)throw factors.error;
   if(aal.error)throw aal.error;
   const verified=[...(factors.data?.totp||[]),...(factors.data?.phone||[])].filter(f=>f.status==='verified');
@@ -56,6 +58,11 @@ async function render(){
   if(!panel()){setTimeout(render,100);return}
   try{
     const st=await authState();
+    if(!st){
+      hideGate();
+      setAppVisible(false);
+      return;
+    }
     const current=st.aal?.currentLevel||'aal1';
     const next=st.aal?.nextLevel||current;
     const has=st.verified.length>0;
@@ -76,7 +83,7 @@ async function render(){
   }catch(err){
     console.error('MFA status error',err);
     setAppVisible(false);
-    showErrorGate('No se pudo verificar la seguridad de la sesión. Cierra sesión e inténtalo nuevamente.');
+    showErrorGate('No fue posible consultar MFA. Reintenta la verificación. Si persiste, cierra sesión e inicia nuevamente.');
   }
 }
 
@@ -113,7 +120,7 @@ async function verifyEnrollment(){
 async function cancelEnrollment(){try{if(enrollment?.id)await client.auth.mfa.unenroll({factorId:enrollment.id})}catch{}enrollment=null;await render()}
 function gateMarkup(){return `<div id="mfa-gate" class="mfa-gate"><div class="mfa-gate-card"><h2>Verificación de seguridad</h2><p class="muted">Ingresa el código actual de 6 dígitos de tu aplicación autenticadora para acceder al panel.</p><div class="field"><input id="mfa-gate-code" class="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></div><div id="mfa-gate-error"></div><div class="mfa-actions"><button type="button" id="mfa-gate-verify" class="btn primary">Verificar</button><button type="button" id="mfa-gate-logout" class="btn secondary">Cerrar sesión</button></div></div></div>`}
 function showGate(factor){if(!$('mfa-gate'))document.body.insertAdjacentHTML('beforeend',gateMarkup());$('mfa-gate').dataset.factorId=factor.id;$('mfa-gate-verify').onclick=()=>verifyGate(factor.id);$('mfa-gate-logout').onclick=async()=>{clearVerifiedSession();await client.auth.signOut();location.reload()};setTimeout(()=>$('mfa-gate-code')?.focus(),50)}
-function showErrorGate(text){if(!$('mfa-gate'))document.body.insertAdjacentHTML('beforeend',gateMarkup());const card=$('mfa-gate')?.querySelector('.mfa-gate-card');if(card)card.innerHTML=`<h2>Acceso protegido</h2><p class="muted">${text}</p><div class="mfa-actions"><button type="button" id="mfa-error-logout" class="btn secondary">Cerrar sesión</button></div>`;$('mfa-error-logout').onclick=async()=>{clearVerifiedSession();await client.auth.signOut();location.reload()}}
+function showErrorGate(text){if(!$('mfa-gate'))document.body.insertAdjacentHTML('beforeend',gateMarkup());const card=$('mfa-gate')?.querySelector('.mfa-gate-card');if(card)card.innerHTML=`<h2>Acceso protegido</h2><p class="muted">${text}</p><div class="mfa-actions"><button type="button" id="mfa-error-retry" class="btn primary">Reintentar verificación</button><button type="button" id="mfa-error-logout" class="btn secondary">Cerrar sesión</button></div>`;$('mfa-error-retry').onclick=()=>render();$('mfa-error-logout').onclick=async()=>{clearVerifiedSession();await client.auth.signOut();location.reload()}}
 function hideGate(){$('mfa-gate')?.remove()}
 async function challengeExisting(factor){setAppVisible(false);showGate(factor)}
 async function verifyGate(factorId){
@@ -135,7 +142,7 @@ function init(){
   document.getElementById('logout')?.addEventListener('click',clearVerifiedSession,{capture:true});
   client.auth.onAuthStateChange((event,session)=>{
     if(event==='SIGNED_OUT'){clearVerifiedSession();hideGate();return}
-    if(event==='SIGNED_IN'&&session&&requiresFreshGate(session))setTimeout(render,50);
+    if(event==='SIGNED_IN'&&session)setTimeout(render,80);
   });
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,20));else setTimeout(init,20);
