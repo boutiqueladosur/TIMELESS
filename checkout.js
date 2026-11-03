@@ -9,8 +9,8 @@ const $=id=>document.getElementById(id);
 const money=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(Number(v)||0);
 const toast=msg=>{const t=$('toast');if(!t)return;t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200)};
 function loadCart(){try{return(JSON.parse(localStorage.getItem(STORAGE)||'[]')||[]).filter(Boolean)}catch{return[]}}
-function getRequestId(){try{const saved=sessionStorage.getItem(REQUEST_ID_KEY);if(saved&&/^[0-9a-f-]{36}$/i.test(saved))return saved;const id=crypto.randomUUID();sessionStorage.setItem(REQUEST_ID_KEY,id);return id}catch{return crypto.randomUUID()}}
-function clearRequestId(){try{sessionStorage.removeItem(REQUEST_ID_KEY)}catch{}}
+function getRequestId(items){const signature=JSON.stringify(items.map(x=>[x.product_id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])));try{const saved=sessionStorage.getItem(REQUEST_ID_KEY),previous=sessionStorage.getItem(REQUEST_ID_KEY+'_cart');if(saved&&previous===signature&&/^[0-9a-f-]{36}$/i.test(saved))return saved;const id=crypto.randomUUID();sessionStorage.setItem(REQUEST_ID_KEY,id);sessionStorage.setItem(REQUEST_ID_KEY+'_cart',signature);return id}catch{return crypto.randomUUID()}}
+function clearRequestId(){try{sessionStorage.removeItem(REQUEST_ID_KEY);sessionStorage.removeItem(REQUEST_ID_KEY+'_cart')}catch{}}
 function whatsappNumber(){const href=$('whatsapp-link')?.href||$('whatsapp-fab')?.href||'';const m=href.match(/wa\.me\/(\d+)/);return m?.[1]||'56935707722'}
 function groupedCart(cart){const m=new Map();for(const x of cart){const id=String(x.id||'');const qty=Math.max(1,Math.min(99,Number(x.qty)||1));if(!id)continue;const current=m.get(id)||{product_id:id,quantity:0,name:x.name||'Producto'};current.quantity=Math.min(99,current.quantity+qty);m.set(id,current)}return [...m.values()]}
 async function submitOrder(e){
@@ -19,7 +19,7 @@ async function submitOrder(e){
  if(name.length<2||address.length<5)return toast('Completa nombre y dirección.');if(phone.replace(/\D/g,'').length<7)return toast('Ingresa un teléfono válido para gestionar la entrega.');
  button.disabled=true;const original=button.innerHTML;button.textContent='Verificando stock y guardando…';
  try{
-  const items=groupedCart(cart);const requestId=getRequestId();
+  const items=groupedCart(cart);const requestId=getRequestId(items);
   const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({client_request_id:requestId,customer_name:name,customer_phone:phone,shipping_address:address,customer_notes:notes||null,items:items.map(x=>({product_id:x.product_id,quantity:x.quantity}))})});
   const payload=await res.json().catch(()=>({}));if(!res.ok)throw new Error(payload.error||'No se pudo registrar el pedido.');
   const order=payload.order;
