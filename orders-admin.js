@@ -52,6 +52,13 @@ function buildUI(){
   ['order-search','order-filter','payment-filter','date-filter','order-sort'].forEach(id=>document.getElementById(id).addEventListener(id==='order-search'?'input':'change',renderOrders));
   document.getElementById('clear-order-filters').addEventListener('click',clearFilters);
   section.addEventListener('click',handleClick);
+  section.addEventListener('change',e=>{
+    const statusSelect=e.target.closest('[data-field="status"]');
+    if(!statusSelect)return;
+    const card=statusSelect.closest('[data-order-id]');
+    const payment=card?.querySelector('[data-field="payment_status"]');
+    if(payment&&statusSelect.value==='refunded')payment.value='refunded';
+  });
 }
 
 async function isAdmin(){
@@ -128,12 +135,23 @@ async function handleClick(e){
   const btn=e.target.closest('[data-save-order]');if(!btn)return;
   const card=btn.closest('[data-order-id]');const id=card?.dataset.orderId;if(!id)return;
   const value=name=>card.querySelector(`[data-field="${name}"]`)?.value||'';
-  const status=value('status'), payment=value('payment_status');
+  const status=value('status');
+  const payment=status==='refunded'?'refunded':value('payment_status');
+  const paymentSelect=card.querySelector('[data-field="payment_status"]');
+  if(paymentSelect&&status==='refunded')paymentSelect.value='refunded';
   const payload={status,payment_status:payment,shipping_provider:value('shipping_provider').trim()||null,tracking_number:value('tracking_number').trim()||null,estimated_delivery_at:value('estimated_delivery_at')?new Date(value('estimated_delivery_at')).toISOString():null,updated_at:new Date().toISOString()};
   if(status==='delivered')payload.delivered_at=new Date().toISOString();
   btn.disabled=true;
-  try{const {error}=await db.from('orders').update(payload).eq('id',id);if(error)throw error;btn.textContent='Guardado ✓';setTimeout(()=>btn.textContent='Guardar cambios',1200);await loadOrders();}
-  catch(err){console.error(err);btn.textContent='Error';setTimeout(()=>btn.textContent='Guardar cambios',1400)}finally{btn.disabled=false}
+  try{
+    const {data,error}=await db.from('orders').update(payload).eq('id',id).select('id,status,payment_status').maybeSingle();
+    if(error)throw error;
+    if(!data)throw new Error('El cambio no se guardó. Tu sesión necesita verificación MFA (nivel AAL2). Abre Seguridad, verifica el Authenticator y vuelve a intentar.');
+    if(data.status!==status||data.payment_status!==payment)throw new Error('El estado guardado no coincide con lo seleccionado.');
+    btn.textContent='Guardado ✓';
+    setTimeout(()=>btn.textContent='Guardar cambios',1200);
+    await loadOrders();
+  }
+  catch(err){console.error(err);btn.textContent='Error';alert(err.message||'No se pudieron guardar los cambios.');setTimeout(()=>btn.textContent='Guardar cambios',1400)}finally{btn.disabled=false}
 }
 
 async function init(){injectStyles();buildUI();if(await isAdmin())loadOrders();db.auth.onAuthStateChange(async()=>{if(await isAdmin()){buildUI();loadOrders();}})}
