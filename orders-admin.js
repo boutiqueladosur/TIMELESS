@@ -52,13 +52,6 @@ function buildUI(){
   ['order-search','order-filter','payment-filter','date-filter','order-sort'].forEach(id=>document.getElementById(id).addEventListener(id==='order-search'?'input':'change',renderOrders));
   document.getElementById('clear-order-filters').addEventListener('click',clearFilters);
   section.addEventListener('click',handleClick);
-  section.addEventListener('change',e=>{
-    const statusSelect=e.target.closest('[data-field="status"]');
-    if(!statusSelect)return;
-    const card=statusSelect.closest('[data-order-id]');
-    const payment=card?.querySelector('[data-field="payment_status"]');
-    if(payment&&statusSelect.value==='refunded')payment.value='refunded';
-  });
 }
 
 async function isAdmin(){
@@ -136,9 +129,7 @@ async function handleClick(e){
   const card=btn.closest('[data-order-id]');const id=card?.dataset.orderId;if(!id)return;
   const value=name=>card.querySelector(`[data-field="${name}"]`)?.value||'';
   const status=value('status');
-  const payment=status==='refunded'?'refunded':value('payment_status');
-  const paymentSelect=card.querySelector('[data-field="payment_status"]');
-  if(paymentSelect&&status==='refunded')paymentSelect.value='refunded';
+  const payment=value('payment_status');
   const payload={status,payment_status:payment,shipping_provider:value('shipping_provider').trim()||null,tracking_number:value('tracking_number').trim()||null,estimated_delivery_at:value('estimated_delivery_at')?new Date(value('estimated_delivery_at')).toISOString():null,updated_at:new Date().toISOString()};
   if(status==='delivered')payload.delivered_at=new Date().toISOString();
   btn.disabled=true;
