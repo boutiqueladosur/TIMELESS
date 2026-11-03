@@ -20,8 +20,8 @@ function injectStyles(){
   .mfa-qr{width:220px;max-width:100%;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px}
   .mfa-code{max-width:220px;letter-spacing:.22em;font-size:20px;font-weight:800;text-align:center}
   .mfa-secret{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;background:#f7f5f2;border-radius:10px;padding:9px 11px;font-size:12px}
-  .mfa-gate{position:fixed;inset:0;z-index:9999;background:rgba(17,17,17,.78);display:grid;place-items:center;padding:20px}
-  .mfa-gate-card{width:min(430px,100%);background:#fff;border-radius:22px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .mfa-gate{position:fixed;inset:0;z-index:99999;background:#f7f5f2;display:grid;place-items:center;padding:20px}
+  .mfa-gate-card{width:min(430px,100%);background:#fff;border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.18)}
   .mfa-gate-card h2{margin:0 0 8px}.mfa-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
   `;
   document.head.appendChild(s);
@@ -36,6 +36,7 @@ function verifiedSessionId(){try{return sessionStorage.getItem(MFA_SESSION_KEY)|
 function markSessionVerified(session){const id=sessionId(session);if(!id)return;try{sessionStorage.setItem(MFA_SESSION_KEY,id)}catch{}}
 function clearVerifiedSession(){try{sessionStorage.removeItem(MFA_SESSION_KEY)}catch{}}
 function requiresFreshGate(session){const id=sessionId(session);return !!id&&verifiedSessionId()!==id}
+function setAppVisible(visible){const app=$('app-view');if(!app)return;app.classList.toggle('hidden',!visible)}
 
 async function authState(){
   const [{data:{session}},factors,aal]=await Promise.all([
@@ -51,13 +52,15 @@ async function authState(){
 }
 
 async function render(){
-  if(!client||!panel())return;
+  if(!client)return;
+  if(!panel()){setTimeout(render,100);return}
   try{
     const st=await authState();
     const current=st.aal?.currentLevel||'aal1';
     const next=st.aal?.nextLevel||current;
     const has=st.verified.length>0;
     const freshRequired=has&&requiresFreshGate(st.session);
+    const gateRequired=has&&((next==='aal2'&&current!=='aal2')||freshRequired);
     setPanel(`<div class="mfa-card">
       <div class="mfa-row"><div><strong>Autenticación multifactor</strong><p class="muted small" style="margin:6px 0 0">Protege el panel con una aplicación autenticadora y códigos temporales de 6 dígitos.</p></div>
       <span class="mfa-badge ${has?'ok':'warn'}">${has?'MFA configurado':'MFA pendiente'}</span></div>
@@ -68,10 +71,12 @@ async function render(){
     </div>`);
     $('mfa-start')?.addEventListener('click',startEnroll);
     $('mfa-challenge')?.addEventListener('click',()=>challengeExisting(st.verified[0]));
-    if(has&&((next==='aal2'&&current!=='aal2')||freshRequired))showGate(st.verified[0]);else hideGate();
+    if(gateRequired){setAppVisible(false);showGate(st.verified[0])}
+    else{hideGate();setAppVisible(true);document.dispatchEvent(new CustomEvent('timeless:mfa-ready'))}
   }catch(err){
     console.error('MFA status error',err);
-    setPanel(`<div class="mfa-card">${msg('No se pudo consultar el estado de MFA. Recarga el panel e intenta nuevamente.')}</div>`);
+    setAppVisible(false);
+    showErrorGate('No se pudo verificar la seguridad de la sesión. Cierra sesión e inténtalo nuevamente.');
   }
 }
 
@@ -101,15 +106,16 @@ async function verifyEnrollment(){
     enrollment=null;
     const {data:{session}}=await client.auth.refreshSession();
     if(session)markSessionVerified(session);
-    await render();
+    location.reload();
   }catch(err){console.error(err);if(out)out.innerHTML=msg('El código no fue aceptado. Espera el siguiente código e inténtalo nuevamente.')}
 }
 
 async function cancelEnrollment(){try{if(enrollment?.id)await client.auth.mfa.unenroll({factorId:enrollment.id})}catch{}enrollment=null;await render()}
-function gateMarkup(){return `<div id="mfa-gate" class="mfa-gate"><div class="mfa-gate-card"><h2>Verificación de seguridad</h2><p class="muted">Ingresa el código actual de 6 dígitos de tu aplicación autenticadora para acceder a esta sesión administrativa.</p><div class="field"><input id="mfa-gate-code" class="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></div><div id="mfa-gate-error"></div><div class="mfa-actions"><button type="button" id="mfa-gate-verify" class="btn primary">Verificar</button><button type="button" id="mfa-gate-logout" class="btn secondary">Cerrar sesión</button></div></div></div>`}
+function gateMarkup(){return `<div id="mfa-gate" class="mfa-gate"><div class="mfa-gate-card"><h2>Verificación de seguridad</h2><p class="muted">Ingresa el código actual de 6 dígitos de tu aplicación autenticadora para acceder al panel.</p><div class="field"><input id="mfa-gate-code" class="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></div><div id="mfa-gate-error"></div><div class="mfa-actions"><button type="button" id="mfa-gate-verify" class="btn primary">Verificar</button><button type="button" id="mfa-gate-logout" class="btn secondary">Cerrar sesión</button></div></div></div>`}
 function showGate(factor){if(!$('mfa-gate'))document.body.insertAdjacentHTML('beforeend',gateMarkup());$('mfa-gate').dataset.factorId=factor.id;$('mfa-gate-verify').onclick=()=>verifyGate(factor.id);$('mfa-gate-logout').onclick=async()=>{clearVerifiedSession();await client.auth.signOut();location.reload()};setTimeout(()=>$('mfa-gate-code')?.focus(),50)}
+function showErrorGate(text){if(!$('mfa-gate'))document.body.insertAdjacentHTML('beforeend',gateMarkup());const card=$('mfa-gate')?.querySelector('.mfa-gate-card');if(card)card.innerHTML=`<h2>Acceso protegido</h2><p class="muted">${text}</p><div class="mfa-actions"><button type="button" id="mfa-error-logout" class="btn secondary">Cerrar sesión</button></div>`;$('mfa-error-logout').onclick=async()=>{clearVerifiedSession();await client.auth.signOut();location.reload()}}
 function hideGate(){$('mfa-gate')?.remove()}
-async function challengeExisting(factor){showGate(factor)}
+async function challengeExisting(factor){setAppVisible(false);showGate(factor)}
 async function verifyGate(factorId){
   const code=String($('mfa-gate-code')?.value||'').replace(/\D/g,''),out=$('mfa-gate-error');
   if(code.length!==6){if(out)out.innerHTML=msg('Ingresa un código válido de 6 dígitos.');return}
@@ -118,8 +124,7 @@ async function verifyGate(factorId){
     const {error:ve}=await client.auth.mfa.verify({factorId,challengeId:challenge.id,code});if(ve)throw ve;
     const {data:{session}}=await client.auth.refreshSession();
     if(session)markSessionVerified(session);
-    hideGate();
-    await render();
+    location.reload();
   }catch(err){console.error(err);if(out)out.innerHTML=msg('Código incorrecto o vencido. Intenta con el código actual de tu aplicación.')}
 }
 
@@ -133,5 +138,5 @@ function init(){
     if(event==='SIGNED_IN'&&session&&requiresFreshGate(session))setTimeout(render,50);
   });
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,150));else setTimeout(init,150);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,20));else setTimeout(init,20);
 })();
