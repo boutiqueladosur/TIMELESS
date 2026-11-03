@@ -26,7 +26,7 @@ async function submitOrder(e){
   if(!order?.order_number||!Number.isFinite(Number(order.total_clp)))throw new Error('El servidor no confirmó los datos del pedido. Intenta nuevamente.');
   const savedItems=Array.isArray(payload.items)?payload.items:[];
   const lines=['Hola TIMELESS ✨',`Pedido ${order.order_number}`,'',...savedItems.map(x=>`• ${x.product_name} × ${x.quantity} — ${money(x.line_total_clp)}`),'',`Total: ${money(order.total_clp)}`,'',`Nombre: ${name}`,`Ciudad / Dirección: ${address}`,`Teléfono: ${phone}`,notes?`Notas: ${notes}`:''].filter(Boolean);
-  const whatsappUrl=`https://wa.me/${whatsappNumber()}?text=${encodeURIComponent(lines.join('\\n'))}`;
+  const whatsappUrl=`https://wa.me/${whatsappNumber()}?text=${encodeURIComponent(lines.join('\n'))}`;
   localStorage.removeItem(STORAGE);
   clearRequestId();
   const notice=document.createElement('div');notice.id='timeless-order-confirmation';notice.setAttribute('role','status');notice.style.cssText='padding:18px;border:1px solid #cfbca2;border-radius:15px;background:#fffdf9;display:grid;gap:12px;line-height:1.5';
