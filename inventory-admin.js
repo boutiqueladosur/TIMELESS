@@ -3,7 +3,7 @@
 const SUPABASE_URL='https://nfphzvcwxyfkbucwwlcx.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_DzvTmxOxVWY4LaKNqx2-xA_4RVK2TtS';
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true}});
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 let items=[],suppliers=[],availability=new Map();
 const movementLabels={entry:'Entrada',return_to_stock:'Devolución a stock',unavailable:'Baja / no disponible',damaged:'Dañado',lost:'Pérdida'};
 async function canRead(){const {data:{user}}=await db.auth.getUser();return ['owner','admin','manager','warehouse','finance','viewer'].includes(user?.app_metadata?.role)}
