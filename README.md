@@ -7,10 +7,10 @@ Tienda online de accesorios desplegable en GitHub Pages.
 - Frontend: HTML, CSS y JavaScript.
 - Catálogo: Supabase (`products`, `categories`, `product_images`).
 - Carrito: `localStorage` del navegador.
-- Pedidos: el cliente arma el pedido en el navegador y lo confirma por WhatsApp.
-- Tablas `orders` y `order_items`: disponibles en Supabase para una etapa posterior de persistencia server-side.
-- Hosting previsto: GitHub Pages.
-- Backend y base de datos: Supabase para catálogo, seguridad y futura persistencia de pedidos.
+- Pedidos: la función `create-order` valida productos, disponibilidad y precios en Supabase antes de registrarlos; el cliente puede continuar la coordinación por WhatsApp después de recibir número de pedido.
+- Tablas `orders`, `order_items` y reservas: utilizadas por el proceso de registro de pedidos.
+- Hosting: GitHub Pages.
+- Backend y base de datos: Supabase para catálogo, pedidos, disponibilidad, cobros manuales, auditoría y seguridad. Webpay no está integrado en el flujo actual; el repositorio conserva su adaptador desactivado.
 
 ## Seguridad
 
@@ -24,3 +24,9 @@ Los cambios de endurecimiento se desarrollan en la rama `security-hardening` ant
 ## Regla principal
 
 No almacenar contraseñas, tokens, `service_role`, claves API privadas ni otros secretos dentro del repositorio público. El frontend utiliza únicamente la publishable key de Supabase y el acceso a datos se controla con RLS.
+
+## Auditoría y pruebas
+
+- `docs/db-audit.sql`: consultas de solo lectura que detectan diferencias entre pedidos, saldos, stock y Kardex.
+- `tests/preflight.test.cjs`: comprobaciones de regresión ejecutadas en GitHub Actions.
+- Los pagos se registran en el módulo Pagos; un pedido confirmado comercialmente no acredita por sí solo el pago.
