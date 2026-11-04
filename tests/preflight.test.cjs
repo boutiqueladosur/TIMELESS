@@ -116,3 +116,12 @@ test('workflow actions visibly wait for full payment',()=>{
  assert.match(layout,/button\.disabled=!full/);
  assert.match(layout,/Pago pendiente/);
 });
+
+test('critical database protections are recorded in a reproducible migration',()=>{
+ const migration=file('supabase/migrations/20261104_integrity_protections.sql');
+ assert.match(migration,/prevent_reversal_of_refunded_payments/);
+ assert.match(migration,/require_full_payment_before_fulfillment/);
+ assert.match(migration,/record_order_delivery_once/);
+ assert.match(migration,/uq_order_delivery_request_id/);
+ assert.match(migration,/revoke all on function public\.record_order_delivery/);
+});
