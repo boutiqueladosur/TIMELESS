@@ -20,19 +20,39 @@ async function loadOrders(){
  if(list)list.innerHTML='<div class="empty">Cargando pedidos…</div>';
  await loadMoreOrders();
 }
+let ordersLoading=false;
 async function loadMoreOrders(){
- if(!(await isAdmin()))return;
+ if(ordersLoading)return;
+ ordersLoading=true;
  const button=document.getElementById('orders-load-more');
  if(button){button.disabled=true;button.textContent='Cargando…'}
  try{
+  if(!(await isAdmin()))throw new Error('Tu sesión no tiene permisos para consultar Pedidos. Inicia sesión nuevamente.');
   const offset=orders.length;
-  const {data,error,count}=await db.from('orders').select(ORDER_COLUMNS,{count:'exact'}).order('created_at',{ascending:false}).range(offset,offset+ORDER_BATCH-1);
-  if(error)throw error;
-  orders.push(...(data||[]));ordersTotal=count??orders.length;
-  ordersHasMore=orders.length<ordersTotal;
+  let {data,error,count}=await db.from('orders').select(ORDER_COLUMNS,{count:'exact'}).order('created_at',{ascending:false}).range(offset,offset+ORDER_BATCH-1);
+  if(error){
+   console.warn('Paginación con conteo falló, reintentando consulta simple:',error);
+   const retry=await db.from('orders').select(ORDER_COLUMNS).order('created_at',{ascending:false}).range(offset,offset+ORDER_BATCH-1);
+   if(retry.error)throw retry.error;
+   data=retry.data;
+   count=null;
+  }
+  if(!Array.isArray(data))throw new Error('Supabase no devolvió una lista de pedidos.');
+  const known=new Set(orders.map(o=>o.id));
+  orders.push(...data.filter(o=>!known.has(o.id)));
+  ordersTotal=Number.isFinite(count)?count:Math.max(orders.length,offset+data.length+(data.length===ORDER_BATCH?1:0));
+  ordersHasMore=count!=null?orders.length<count:data.length===ORDER_BATCH;
   renderOrders();
- }catch(error){console.error(error);const list=document.getElementById('orders-list');if(list&&!orders.length)list.innerHTML='<div class="empty">No se pudieron cargar los pedidos.</div>';else alert('No se pudieron cargar más pedidos. Vuelve a intentarlo.');}
- finally{if(button){button.disabled=false;button.hidden=!ordersHasMore;button.textContent='Cargar más pedidos'}}
+ }catch(error){
+  console.error('TIMELESS Pedidos: error de carga',error);
+  const message=error?.message||'Error desconocido al consultar la base de datos';
+  const list=document.getElementById('orders-list');
+  if(list&&!orders.length)list.innerHTML='<div class="empty">No se pudieron cargar los pedidos. '+esc(message)+'</div>';
+  else if(list){const notice=document.createElement('div');notice.className='empty';notice.textContent='No se pudieron cargar más pedidos: '+message;list.appendChild(notice)}
+ }finally{
+  ordersLoading=false;
+  if(button){button.disabled=false;button.hidden=!ordersHasMore;button.textContent='Cargar más pedidos'}
+ }
 }
 function dateMatches(createdAt,filter){if(filter==='all')return true;const d=new Date(createdAt);if(Number.isNaN(d.getTime()))return false;const now=new Date();if(filter==='today')return d.toDateString()===now.toDateString();if(filter==='month')return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();const days=filter==='7d'?7:filter==='30d'?30:null;if(days){const start=new Date(now);start.setHours(0,0,0,0);start.setDate(start.getDate()-(days-1));return d>=start&&d<=now}return true}
 function filteredOrders(){const q=(document.getElementById('order-search')?.value||'').trim().toLowerCase(),status=document.getElementById('order-filter')?.value||'all',payment=document.getElementById('payment-filter')?.value||'all',date=document.getElementById('date-filter')?.value||'all',sort=document.getElementById('order-sort')?.value||'newest';const rows=orders.filter(o=>(status==='all'||o.status===status)&&(payment==='all'||o.payment_status===payment)&&dateMatches(o.created_at,date)&&(!q||`${o.order_number} ${o.customer_name} ${o.customer_phone}`.toLowerCase().includes(q)));rows.sort((a,b)=>sort==='oldest'?new Date(a.created_at)-new Date(b.created_at):sort==='high'?Number(b.total_clp||0)-Number(a.total_clp||0):sort==='low'?Number(a.total_clp||0)-Number(b.total_clp||0):new Date(b.created_at)-new Date(a.created_at));return rows}
