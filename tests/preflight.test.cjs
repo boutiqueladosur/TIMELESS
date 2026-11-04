@@ -88,3 +88,31 @@ test('checkout only sends server-owned product prices',()=>{
  assert.match(checkout,/product_id:x\.product_id,quantity:x\.quantity/);
  assert.doesNotMatch(checkout,/unit_price_clp:x\./);
 });
+
+test('order history loads in batches without losing the approved card layout',()=>{
+ const orders=file('orders-admin.js');
+ assert.match(orders,/\.range\(offset,offset\+ORDER_BATCH-1\)/);
+ assert.match(orders,/orders-load-more/);
+ assert.match(orders,/order-card/);
+ assert.doesNotMatch(orders,/\.limit\(200\)/);
+});
+test('shipping page exposes safe partial delivery and the client uses retry key',()=>{
+ const shipping=file('shipping-admin.js');
+ const partial=file('partial-delivery-admin.js');
+ assert.match(shipping,/data-partial-delivery/);
+ assert.match(shipping,/id="ship-partial"/);
+ assert.match(partial,/record_order_delivery_once/);
+ assert.match(partial,/timeless_delivery_retry_/);
+ assert.doesNotMatch(partial,/db\.rpc\('record_order_delivery'/);
+});
+test('checkout recognizes changed request IDs without returning generic server error',()=>{
+ const backend=file('supabase/functions/create-order/index.ts');
+ assert.match(backend,/REQUEST_ID_REUSED_WITH_DIFFERENT_ORDER/);
+ assert.match(backend,/return json\(409/);
+});
+test('workflow actions visibly wait for full payment',()=>{
+ const layout=file('orders-layout.js');
+ assert.match(layout,/checkWorkflowPayment/);
+ assert.match(layout,/button\.disabled=!full/);
+ assert.match(layout,/Pago pendiente/);
+});
