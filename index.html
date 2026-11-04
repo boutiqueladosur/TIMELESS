@@ -49,9 +49,9 @@
   </main>
   <footer class="footer"><div class="footer-inner"><span>© <span id="year"></span> TIMELESS. Todos los derechos reservados.</span><span>Accesorios · Boutique · Chile · <a href="privacidad.html">Política de Privacidad</a></span></div></footer>
   <a class="fab" id="whatsapp-fab" href="https://wa.me/56935707722" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-  <div class="overlay hidden" id="cart-modal"><aside class="drawer"><div class="drawer-head"><h3>Tu pedido</h3><button class="icon-btn" id="close-cart" type="button"><i class="fa-solid fa-xmark"></i></button></div><div class="items" id="cart-items"></div><div class="drawer-foot"><div class="subtotal"><span>Subtotal estimado</span><strong id="total">$0</strong></div><form id="order-form" class="form"><input id="name" required placeholder="Nombre completo *"><input id="location" required placeholder="Ciudad / Dirección *"><input id="phone" placeholder="Teléfono *" required><textarea id="notes" rows="2" placeholder="Notas del pedido"></textarea><button class="send" type="submit"><i class="fa-brands fa-whatsapp"></i> Registrar pedido</button></form></div></aside></div>
+  <div class="overlay hidden" id="cart-modal"><aside class="drawer"><div class="drawer-head"><h3>Tu pedido</h3><button class="icon-btn" id="close-cart" type="button"><i class="fa-solid fa-xmark"></i></button></div><div class="items" id="cart-items"></div><div class="drawer-foot"><div class="subtotal"><span>Subtotal estimado</span><strong id="total">$0</strong></div><form id="order-form" class="form"><input id="name" required maxlength="160" autocomplete="name" placeholder="Nombre completo *"><input id="location" required maxlength="300" autocomplete="street-address" placeholder="Ciudad / Dirección *"><input id="phone" type="tel" inputmode="tel" maxlength="30" autocomplete="tel" placeholder="Teléfono *" required><textarea id="notes" rows="2" maxlength="1000" placeholder="Notas del pedido"></textarea><button class="send" type="submit"><i class="fa-brands fa-whatsapp"></i> Registrar pedido</button></form></div></aside></div>
   <div class="toast" id="toast"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script>
 (()=>{
 'use strict';
