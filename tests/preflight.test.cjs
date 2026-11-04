@@ -28,7 +28,7 @@ test('sales documents use atomic RPC and no partial browser inserts',()=>{
 test('approved Orders layout and HTML escaping remain unchanged',()=>{
  const orders=file('orders-admin.js');
  const layout=file('orders-layout.js');
- assert.match(orders,/Object\\.entries\\(statusLabels\\)/);
+ assert.match(orders,/Object\.entries\(statusLabels\)/);
  assert.match(orders,/&quot;/);
  assert.match(layout,/order-details/);
  assert.match(layout,/Ver artículos, documentos y editar pedido/);
@@ -80,11 +80,11 @@ test('database audit covers financial and inventory reconciliation',()=>{
 test('partial delivery module is loaded in Shipping without altering Orders',()=>{
  const tabs=file('admin-tabs.js');
  const module=file('partial-delivery-admin.js');
- assert.match(tabs,/partial-delivery-admin\\.js/);
+ assert.match(tabs,/partial-delivery-admin\.js/);
  assert.match(module,/record_order_delivery/);
 });
 test('checkout only sends server-owned product prices',()=>{
  const checkout=file('checkout.js');
- assert.match(checkout,/product_id:x\\.product_id,quantity:x\\.quantity/);
- assert.doesNotMatch(checkout,/unit_price_clp:x\\./);
+ assert.match(checkout,/product_id:x\.product_id,quantity:x\.quantity/);
+ assert.doesNotMatch(checkout,/unit_price_clp:x\./);
 });
