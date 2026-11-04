@@ -21,7 +21,7 @@ async function submitOrder(e){
  try{
   const items=groupedCart(cart);const requestId=getRequestId(items);
   const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${SUPABASE_PUBLISHABLE_KEY}`},body:JSON.stringify({client_request_id:requestId,customer_name:name,customer_phone:phone,shipping_address:address,customer_notes:notes||null,items:items.map(x=>({product_id:x.product_id,quantity:x.quantity}))})});
-  const payload=await res.json().catch(()=>({}));if(!res.ok)throw new Error(payload.error||'No se pudo registrar el pedido.');
+  const payload=await res.json().catch(()=>({}));if(!res.ok){const error=new Error(payload.error||'No se pudo registrar el pedido.');error.status=res.status;throw error}
   const order=payload.order;
   if(!order?.order_number||!Number.isFinite(Number(order.total_clp)))throw new Error('El servidor no confirmó los datos del pedido. Intenta nuevamente.');
   const savedItems=Array.isArray(payload.items)?payload.items:[];
@@ -37,7 +37,7 @@ async function submitOrder(e){
   notice.append(title,info,link,back);form.replaceWith(notice);
   toast(payload.duplicate?'Pedido recuperado con éxito.':'Pedido guardado con éxito.');
 
- }catch(err){console.error(err);toast(err.message||'No se pudo crear el pedido.')}finally{button.disabled=false;button.innerHTML=original}
+ }catch(err){console.error(err);toast(err.message||'No se pudo crear el pedido. Si no recibiste un número de pedido, revisa antes de reintentar.');}finally{button.disabled=false;button.innerHTML=original}
 }
 function init(){const form=$('order-form');if(!form)return;const phone=$('phone');if(phone){phone.required=true;phone.placeholder='Teléfono *'}form.addEventListener('submit',submitOrder,true)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
