@@ -4,7 +4,7 @@ const SUPABASE_URL='https://nfphzvcwxyfkbucwwlcx.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_DzvTmxOxVWY4LaKNqx2-xA_4RVK2TtS';
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true}});
 const money=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(Number(v)||0);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const fmt=d=>d?new Intl.DateTimeFormat('es-CL',{dateStyle:'medium',timeStyle:'short'}).format(new Date(d)):'';
 const statusLabels={pending:'Nuevo',payment_pending:'Pago pendiente',paid:'Confirmado',preparing:'Preparando',shipped:'En ruta',delivered:'Entregado',cancelled:'Cancelado',refunded:'Reembolsado'};
 const paymentLabels={pending:'Pendiente',authorized:'Autorizado',paid:'Pagado',failed:'Fallido',cancelled:'Cancelado',refunded:'Reembolsado'};
