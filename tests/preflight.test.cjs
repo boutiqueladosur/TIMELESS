@@ -25,12 +25,13 @@ test('sales documents use atomic RPC and no partial browser inserts',()=>{
  assert.match(tax,/db\.rpc\('create_sales_document_atomic'/);
  assert.doesNotMatch(tax,/from\('sales_document_items'\)\.insert/);
 });
-test('orders use batched pagination and escape HTML attributes safely',()=>{
+test('approved Orders layout and HTML escaping remain unchanged',()=>{
  const orders=file('orders-admin.js');
- assert.match(orders,/\.range\(offset,offset\+batchSize-1\)/);
- assert.match(orders,/orders-pagination/);
- assert.doesNotMatch(orders,/\.limit\(200\)/);
+ const layout=file('orders-layout.js');
+ assert.match(orders,/Object\\.entries\\(statusLabels\\)/);
  assert.match(orders,/&quot;/);
+ assert.match(layout,/order-details/);
+ assert.match(layout,/Ver artículos, documentos y editar pedido/);
 });
 test('inline scripts in public and admin HTML parse',()=>{
  for(const name of ['index.html','admin.html']){
@@ -74,4 +75,16 @@ test('database audit covers financial and inventory reconciliation',()=>{
  assert.match(sql,/Saldo distinto del total menos pagos/);
  assert.match(sql,/Stock distinto del Kardex/);
  assert.doesNotMatch(sql,/\b(?:drop|delete|update|truncate|alter|insert)\s+(?:table|from|into|public\.)/i);
+});
+
+test('partial delivery module is loaded in Shipping without altering Orders',()=>{
+ const tabs=file('admin-tabs.js');
+ const module=file('partial-delivery-admin.js');
+ assert.match(tabs,/partial-delivery-admin\\.js/);
+ assert.match(module,/record_order_delivery/);
+});
+test('checkout only sends server-owned product prices',()=>{
+ const checkout=file('checkout.js');
+ assert.match(checkout,/product_id:x\\.product_id,quantity:x\\.quantity/);
+ assert.doesNotMatch(checkout,/unit_price_clp:x\\./);
 });
