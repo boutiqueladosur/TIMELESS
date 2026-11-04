@@ -34,6 +34,17 @@ function styles(){
 }
 const quickSteps={paid:{label:'Preparar',next:'preparing'},preparing:{label:'Despachar',next:'shipped'},shipped:{label:'Marcar entregado',next:'delivered'}};
 const db=window.supabase.createClient('https://nfphzvcwxyfkbucwwlcx.supabase.co','sb_publishable_DzvTmxOxVWY4LaKNqx2-xA_4RVK2TtS');
+async function checkWorkflowPayment(card,button){
+ try{
+  const {data,error}=await db.from('orders').select('total_clp,paid_amount_clp').eq('id',card.dataset.orderId).single();
+  if(error)throw error;
+  if(!button.isConnected)return;
+  const full=Number(data.paid_amount_clp||0)>=Number(data.total_clp||0);
+  button.disabled=!full;
+  button.textContent=full?button.dataset.actionLabel:'Pago pendiente';
+  button.title=full?'':'Registra el pago completo en Pagos antes de avanzar';
+ }catch(error){console.error(error);button.disabled=true;button.textContent='Verificar pago';}
+}
 function addStatusActions(card){
  const actions=card.querySelector(':scope > .order-actions');
  const field=card.querySelector('[data-field="status"]');
@@ -46,8 +57,9 @@ function addStatusActions(card){
  const button=document.createElement('button');
  button.type='button';button.className='btn secondary';
  button.dataset.quickState='';button.dataset.nextStatus=step.next;
- button.textContent=step.label;
+ button.dataset.actionLabel=step.label;button.textContent='Verificando pago';button.disabled=true;
  actions.insertBefore(button,actions.firstChild);
+ checkWorkflowPayment(card,button);
 }
 async function quickChange(event){
  const button=event.target.closest('[data-quick-state]');
