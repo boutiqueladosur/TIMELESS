@@ -42,3 +42,36 @@ test('inline scripts in public and admin HTML parse',()=>{
   }
  }
 });
+
+
+test('published checkout validates user input and pins Supabase dependency',()=>{
+ const html=file('index.html');
+ assert.match(html,/maxlength="160" autocomplete="name"/);
+ assert.match(html,/maxlength="300" autocomplete="street-address"/);
+ assert.match(html,/maxlength="1000" placeholder="Notas del pedido"/);
+ assert.match(html,/supabase-js@2\.118\.0/);
+ assert.doesNotMatch(html,/supabase-js@2["']/);
+});
+test('checkout only offers registered orders, not direct WhatsApp fallback',()=>{
+ const checkout=file('checkout.js');
+ assert.doesNotMatch(checkout,/showDirectWhatsApp|timeless-direct-whatsapp/);
+ assert.match(checkout,/create-order/);
+ assert.match(checkout,/Pedido registrado/);
+});
+test('HTML escape maps include quote entity terminator',()=>{
+ const {readdirSync}=require('node:fs');
+ for(const name of readdirSync('.').filter(n=>/\.(js|html)$/.test(n))){
+  assert.doesNotMatch(file(name),/'&quot'/,name);
+ }
+});
+test('approved Orders panel remains visually unchanged',()=>{
+ const orders=file('orders-admin.js');
+ assert.match(orders,/Object\.entries\(statusLabels\)/);
+ assert.doesNotMatch(orders,/ORDERS_PAGE_SIZE/);
+});
+test('database audit covers financial and inventory reconciliation',()=>{
+ const sql=file('docs/db-audit.sql');
+ assert.match(sql,/Saldo distinto del total menos pagos/);
+ assert.match(sql,/Stock distinto del Kardex/);
+ assert.doesNotMatch(sql,/\b(?:drop|delete|update|truncate|alter|insert)\s+(?:table|from|into|public\.)/i);
+});
