@@ -1,7 +1,21 @@
 (()=>{'use strict';
 const db=window.supabase.createClient('https://nfphzvcwxyfkbucwwlcx.supabase.co','sb_publishable_DzvTmxOxVWY4LaKNqx2-xA_4RVK2TtS');
 const pendingDelivery=new Map();
-function deliveryKey(id,items){const signature=id+'|'+JSON.stringify(items);const saved=pendingDelivery.get(id);if(saved?.signature===signature)return saved.id;const key=crypto.randomUUID();pendingDelivery.set(id,{signature,id:key});return key}
+function deliveryKey(id,items){
+ const signature=id+'|'+JSON.stringify(items);
+ const storageKey='timeless_delivery_retry_'+id;
+ let saved=pendingDelivery.get(id);
+ if(!saved){try{const raw=sessionStorage.getItem(storageKey);if(raw)saved=JSON.parse(raw)}catch{}}
+ if(saved?.id){pendingDelivery.set(id,saved);return saved.id}
+ const next={signature,id:crypto.randomUUID()};
+ pendingDelivery.set(id,next);
+ try{sessionStorage.setItem(storageKey,JSON.stringify(next))}catch{}
+ return next.id;
+}
+function clearDeliveryKey(id){
+ pendingDelivery.delete(id);
+ try{sessionStorage.removeItem('timeless_delivery_retry_'+id)}catch{}
+}
 const clean=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function deliver(id){
 const [o,i,d]=await Promise.all([
@@ -17,7 +31,7 @@ for(const input of form.querySelectorAll('[data-id]')){const qty=Number(input.va
 if(!payload.length)return alert('Selecciona unidades.');
 if(!confirm('Se descontarán '+payload.reduce((n,x)=>n+x.quantity,0)+' unidades. ¿Confirmar entrega física?'))return;
 const b=form.querySelector('button');b.disabled=true;
-try{const requestId=deliveryKey(id,payload);const r=await db.rpc('record_order_delivery_once',{p_request_id:requestId,p_order_id:id,p_items:payload,p_carrier:form.elements.carrier.value,p_tracking:form.elements.tracking.value,p_notes:null});if(r.error)throw r.error;pendingDelivery.delete(id);alert((r.data.duplicate?'Entrega recuperada: ':'Entrega ')+r.data.delivery_number+' registrada. Pendientes: '+r.data.remaining_units);wrap.innerHTML='';document.getElementById('ship-refresh')?.click()}catch(err){alert('Error: '+err.message)}finally{b.disabled=false}};
+try{const requestId=deliveryKey(id,payload);const r=await db.rpc('record_order_delivery_once',{p_request_id:requestId,p_order_id:id,p_items:payload,p_carrier:form.elements.carrier.value,p_tracking:form.elements.tracking.value,p_notes:null});if(r.error)throw r.error;clearDeliveryKey(id);alert((r.data.duplicate?'Entrega recuperada: ':'Entrega ')+r.data.delivery_number+' registrada. Pendientes: '+r.data.remaining_units);wrap.innerHTML='';document.getElementById('ship-refresh')?.click()}catch(err){alert('Error: '+err.message)}finally{b.disabled=false}};
 }
 document.addEventListener('click',async e=>{const button=e.target.closest('[data-partial-delivery]');if(!button)return;try{await deliver(button.closest('[data-ship-id]').dataset.shipId)}catch(err){alert(err.message)}});
 })();
