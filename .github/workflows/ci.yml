@@ -20,6 +20,8 @@ jobs:
           for f in *.js; do
             [ -f "$f" ] && node --check "$f"
           done
+      - name: Preflight regression tests
+        run: node --test tests/preflight.test.cjs
       - name: Check critical modules exist
         run: |
           test -f checkout.js
