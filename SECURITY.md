@@ -2,7 +2,7 @@
 
 ## Alcance
 
-Este repositorio contiene una tienda estática desplegable en GitHub Pages. La aplicación carga el catálogo desde Supabase y genera pedidos que el cliente confirma mediante WhatsApp.
+Este repositorio contiene una tienda estática desplegable en GitHub Pages. La aplicación carga el catálogo desde Supabase y registra pedidos en la Edge Function `create-order` antes de ofrecer la coordinación por WhatsApp.
 
 ## Reporte de vulnerabilidades
 
@@ -25,7 +25,7 @@ Para reportar un problema de seguridad, contacta al propietario del repositorio 
 
 ## Datos personales
 
-El carrito se conserva localmente en el navegador. Los datos introducidos para confirmar un pedido se utilizan para construir el mensaje de WhatsApp y actualmente no se guardan en las tablas `orders` u `order_items` desde el frontend.
+El carrito se conserva localmente en el navegador. Al confirmar un pedido, nombre, teléfono, dirección, notas y artículos se transmiten a la Edge Function `create-order` para registrarlos en Supabase. El navegador usa una clave publicable; la clave de servicio permanece en el servidor. Los mismos datos pueden utilizarse para componer un mensaje dirigido a WhatsApp.
 
 ## Dependencias externas
 
@@ -34,3 +34,7 @@ La aplicación depende de servicios externos como Supabase, Google Fonts, Font A
 ## Desarrollo seguro
 
 Los cambios relevantes deben realizarse en una rama separada y revisarse antes de incorporarse a `main`. Se recomienda mantener `main` como rama de producción y evitar commits experimentales directos.
+
+## Verificaciones
+
+Ejecutar regularmente `docs/db-audit.sql` con un rol autorizado y revisar las alertas de seguridad de Supabase. El archivo de auditoría es de solo lectura y no debe confundirse con una prueba integral de pagos o seguridad.
