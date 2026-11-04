@@ -32,6 +32,41 @@ function styles(){
  `;
  document.head.appendChild(el);
 }
+const quickSteps={paid:{label:'Preparar',next:'preparing'},preparing:{label:'Despachar',next:'shipped'},shipped:{label:'Marcar entregado',next:'delivered'}};
+const db=window.supabase.createClient('https://nfphzvcwxyfkbucwwlcx.supabase.co','sb_publishable_DzvTmxOxVWY4LaKNqx2-xA_4RVK2TtS');
+function addStatusActions(card){
+ const actions=card.querySelector(':scope > .order-actions');
+ const field=card.querySelector('[data-field="status"]');
+ if(!actions||!field)return;
+ const previous=actions.querySelector('[data-quick-state]');
+ const step=quickSteps[field.value];
+ if(!step){previous?.remove();return}
+ if(previous?.dataset.nextStatus===step.next)return;
+ previous?.remove();
+ const button=document.createElement('button');
+ button.type='button';button.className='btn secondary';
+ button.dataset.quickState='';button.dataset.nextStatus=step.next;
+ button.textContent=step.label;
+ actions.insertBefore(button,actions.firstChild);
+}
+async function quickChange(event){
+ const button=event.target.closest('[data-quick-state]');
+ if(!button)return;
+ const card=button.closest('.order-card[data-order-id]');if(!card)return;
+ const current=card.querySelector('[data-field="status"]')?.value;
+ const requested=button.dataset.nextStatus;
+ if(quickSteps[current]?.next!==requested)return alert('Actualiza el pedido antes de continuar.');
+ if(requested==='delivered'&&!confirm('¿Confirmas que se entregó todo el pedido? Si faltan unidades, regístralas primero en Despachos.'))return;
+ button.disabled=true;
+ try{
+  const {data:{user}}=await db.auth.getUser();
+  const {data:level,error:authError}=await db.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(authError||user?.app_metadata?.role!=='admin'||level?.currentLevel!=='aal2')throw new Error('Requiere permisos de administración y MFA.');
+  const {data,error}=await db.from('orders').update({status:requested,updated_at:new Date().toISOString()}).eq('id',card.dataset.orderId).eq('status',current).select('id,status').maybeSingle();
+  if(error)throw error;if(!data||data.status!==requested)throw new Error('Estado no actualizado. Refresca el pedido.');
+  document.getElementById('refresh-orders')?.click();
+ }catch(error){console.error(error);alert(error.message||'No se pudo cambiar el estado.')}finally{button.disabled=false}
+}
 const opened=new Set();
 const section=(title,element,parent)=>{
  const heading=document.createElement('div');heading.className='order-section-title';heading.textContent=title;
@@ -53,6 +88,7 @@ function decorate(){
    card.insertBefore(details,actions);
    details.addEventListener('toggle',()=>{if(details.open)opened.add(id);else opened.delete(id)});
   }
+  addStatusActions(card);
   const body=details.querySelector('.order-details-body');
   const parts=[['Artículos comprados','.order-items'],['Documentos tributarios','.tax-docs'],['Estado y despacho','.order-fields'],['Costos del envío','.shipping-finance']];
   for(const [title,selector] of parts){
@@ -64,6 +100,7 @@ function decorate(){
 }
 function init(){
  styles();
+ document.getElementById('orders-management')?.addEventListener('click',quickChange);
  let scheduled=false;
  const schedule=()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;decorate()})};
  const timer=setInterval(()=>{const list=document.getElementById('orders-list');if(!list)return;clearInterval(timer);
