@@ -3,28 +3,50 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {readFileSync,existsSync}=require('node:fs');
 const vm=require('node:vm');
-const html=readFileSync('admin.html','utf8');
+const admin=readFileSync('admin.html','utf8');
 const shop=readFileSync('index.html','utf8');
-test('Minimal panel keeps product and image management',()=>{
- for(const marker of ['id="images"','id="price"','id="sale-price"','id="name"','id="description"','id="products"','id="save-whatsapp"'])assert.ok(html.includes(marker),marker);
- assert.match(html,/uploadImages/);
- assert.match(html,/Supabase/);
+const catalog=readFileSync('catalogo-publico.js','utf8');
+
+test('The public site is a simple WhatsApp catalog, not a checkout',()=>{
+  assert.match(shop,/catalogo-publico\.js/);
+  assert.match(shop,/id="whatsapp-header"/);
+  assert.doesNotMatch(shop,/id="order-form"|id="cart-modal"|checkout\.js/);
+  assert.doesNotMatch(catalog,/create-order|create_order_atomic|inventory_reservations/);
+  assert.match(catalog,/messageLink/);
+  assert.match(catalog,/wa\.me/);
 });
-test('No large ERP modules are loaded from the minimal panel',()=>{
- assert.doesNotMatch(html,/(?:orders-admin|admin-tabs|payments-admin|kardex-admin)\.js/);
- for(const f of ['orders-admin.js','admin-tabs.js','payments-admin.js','kardex-admin.js'])assert.ok(!existsSync(f),f+' should be extracted');
+
+test('Catalog retrieves product details and product images but no cost fields',()=>{
+  assert.match(catalog,/\.from\('products'\)/);
+  assert.match(catalog,/product_images\(image_url,sort_order,is_primary\)/);
+  assert.doesNotMatch(catalog,/average_cost_clp|unit_cost_clp|supplier_id/);
 });
-test('Catalog retains server-protected checkout',()=>{
- assert.match(shop,/checkout\.js\?v=/);
- assert.match(readFileSync('checkout.js','utf8'),/create-order/);
+
+test('The minimal panel supports photos, prices and inventory movements',()=>{
+  for(const key of ['id="images"','id="price"','id="sale-price"','id="name"','id="description"','id="products"','id="save-whatsapp"','id="stock-quantity"','id="apply-stock"'])assert.ok(admin.includes(key),key);
+  assert.match(admin,/uploadImages/);
+  assert.match(admin,/async function adjustStock/);
+  assert.match(admin,/db\.from\('inventory_movements'\)\.insert/);
+  assert.match(admin,/Number\.isSafeInteger\(quantity\)/);
+  assert.match(admin,/aal\?\.currentLevel!=='aal2'/);
+  assert.match(admin,/id="stock"[^>]+readonly/);
 });
-test('MFA and idle security are loaded in minimal panel',()=>{
- assert.match(html,/security-admin\.js/);
- assert.match(html,/session-idle\.js/);
- assert.ok(existsSync('security-admin.js'));
+
+test('ERP modules and checkout are absent from the store project',()=>{
+  assert.doesNotMatch(admin,/(?:orders-admin|admin-tabs|payments-admin|kardex-admin)\.js/);
+  for(const f of ['orders-admin.js','admin-tabs.js','payments-admin.js','kardex-admin.js','checkout.js'])assert.ok(!existsSync(f),f+' should not exist in storefront');
 });
-test('Inline admin scripts parse',()=>{
- for(const [,attrs,body] of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)){
-  if(!/\bsrc\s*=/.test(attrs)&&body.trim())assert.doesNotThrow(()=>new vm.Script(body));
- }
+
+test('Admin keeps MFA and idle-session security',()=>{
+  assert.match(admin,/security-admin\.js/);
+  assert.match(admin,/session-idle\.js/);
+});
+
+test('All inline scripts parse correctly',()=>{
+  for(const source of [admin,shop]){
+    for(const [,attrs,body] of source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)){
+      if(!/\bsrc\s*=/.test(attrs)&&body.trim())assert.doesNotThrow(()=>new vm.Script(body));
+    }
+  }
+  assert.doesNotThrow(()=>new vm.Script(catalog));
 });
