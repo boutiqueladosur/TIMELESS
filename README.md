@@ -1,32 +1,26 @@
-# TIMELESS
+# TIMELESS ERP — Proyecto independiente
 
-Tienda online de accesorios desplegable en GitHub Pages.
+Este proyecto contiene el **panel administrativo completo** que se extrajo de TIMELESS el 6 de noviembre de 2026. No incluye la tienda pública.
 
-## Arquitectura actual
+## Alcance
 
-- Frontend: HTML, CSS y JavaScript.
-- Catálogo: Supabase (`products`, `categories`, `product_images`).
-- Carrito: `localStorage` del navegador.
-- Pedidos: la función `create-order` valida productos, disponibilidad y precios en Supabase antes de registrarlos; el cliente puede continuar la coordinación por WhatsApp después de recibir número de pedido.
-- Tablas `orders`, `order_items` y reservas: utilizadas por el proceso de registro de pedidos.
-- Hosting: GitHub Pages.
-- Backend y base de datos: Supabase para catálogo, pedidos, disponibilidad, cobros manuales, auditoría y seguridad. Webpay no está integrado en el flujo actual; el repositorio conserva su adaptador desactivado.
+Incluye Gerencia, Pedidos, Clientes, Pagos, Despachos, Inventario, Kardex, Compras, Proveedores, Gastos, Alertas, Auditoría, Seguridad y el editor de Productos. Conserva el diseño de Pedidos y la corrección de recepciones parciales de Compras en la rama de estabilización de origen.
 
-## Seguridad
+## Ejecutar
 
-La documentación de seguridad está disponible en:
+Publicar estos archivos estáticos desde un servidor HTTPS o GitHub Pages y abrir `index.html` o `admin.html`. No requiere compilación. El cliente usa Supabase JS desde CDN.
 
-- `SECURITY.md`
-- `docs/SECURITY-AUDIT.md`
+## Importante
 
-Los cambios de endurecimiento se desarrollan en la rama `security-hardening` antes de ser revisados e incorporados a `main`.
+- **Código separado, datos todavía compartidos:** apunta al Supabase de TIMELESS. No ejecutar operaciones reales sin coordinar la migración y crear una copia de seguridad.
+- No se han extraído los datos, migrado servicios ni configurado un dominio propio. La base de datos y las Edge Functions siguen siendo las compartidas con la tienda.
+- El backend de compras, movimientos de inventario, pagos y reservas necesita validación funcional con cuenta MFA AAL2 en entorno de pruebas.
+- La base tiene muchas migraciones no presentes en el repositorio: el archivo SQL incluido no recrea una instancia completa desde cero.
+- No desplegar como ERP listo para producción sin pruebas integrales. Las pruebas automáticas estáticas no sustituyen pruebas con Supabase.
+- Nunca poner claves secretas Supabase en estos archivos públicos. El acceso depende de RLS, autorización de roles y MFA.
 
-## Regla principal
+## Relación con la tienda
 
-No almacenar contraseñas, tokens, `service_role`, claves API privadas ni otros secretos dentro del repositorio público. El frontend utiliza únicamente la publishable key de Supabase y el acceso a datos se controla con RLS.
+Tienda principal: https://github.com/boutiqueladosur/TIMELESS
 
-## Auditoría y pruebas
-
-- `docs/db-audit.sql`: consultas de solo lectura que detectan diferencias entre pedidos, saldos, stock y Kardex.
-- `tests/preflight.test.cjs`: comprobaciones de regresión ejecutadas en GitHub Actions.
-- Los pagos se registran en el módulo Pagos; un pedido confirmado comercialmente no acredita por sí solo el pago.
+Se conserva esta exportación en la rama `export/erp-independiente-20261106`; puede importarse como nuevo repositorio usando esta rama como fuente, sin arrastrar la tienda pública.
