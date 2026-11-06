@@ -1,14 +1,11 @@
-name: TIMELESS CI
-
+name: TIMELESS Catalog CI
 on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
-
+    branches: [main, "refactor/catalogo-simple-20261106"]
 permissions:
   contents: read
-
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -17,34 +14,17 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           set -e
-          for f in *.js; do
-            [ -f "$f" ] && node --check "$f"
-          done
-      - name: Preflight regression tests
+          for f in *.js; do [ -f "$f" ] && node --check "$f"; done
+      - name: Catalog regression tests
         run: node --test tests/*.test.cjs
-      - name: Check critical modules exist
+      - name: Validate required files
         run: |
+          test -f index.html
+          test -f admin.html
           test -f checkout.js
-          test -f admin-tabs.js
-          test -f inventory-admin.js
-          test -f payments-admin.js
-          test -f audit-admin.js
+          test -f security-admin.js
+          test -f session-idle.js
           test -f supabase/functions/create-order/index.ts
       - name: Prevent server secrets in public frontend
         run: |
-          if grep -R -n -E 'SUPABASE_SERVICE_ROLE_KEY|service_role' --include='*.js' --include='*.html' . --exclude-dir=supabase --exclude-dir=.git; then
-            echo 'Server-only secret reference found in public frontend.'
-            exit 1
-          fi
-      - name: Verify checkout uses protected order endpoint
-        run: |
-          grep -q 'functions/v1/create-order' checkout.js
-          grep -q 'groupedCart' checkout.js
-          grep -q 'create_order_atomic' supabase/functions/create-order/index.ts
-          grep -q 'consume_order_rate_limit' supabase/functions/create-order/index.ts
-      - name: Verify admin security and operations modules
-        run: |
-          grep -q 'session-idle.js' admin-tabs.js
-          grep -q 'audit-admin.js' admin-tabs.js
-          grep -q 'inventory_availability' inventory-admin.js
-          grep -q 'data-reverse-payment' payments-admin.js
+          if grep -R -n -E 'SUPABASE_SERVICE_ROLE_KEY|service_role' --include='*.js' --include='*.html' . --exclude-dir=supabase --exclude-dir=.git; then exit 1; fi

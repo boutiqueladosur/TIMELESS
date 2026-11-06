@@ -23,7 +23,7 @@
 
 <div id="app-view" class="hidden">
   <main class="shell">
-    <div class="top"><div class="brand"><div class="mark">T</div><div><h1>Panel de administración</h1><small id="admin-email"></small></div></div><div style="display:flex;gap:8px"><a class="btn secondary" href="index.html" target="_blank" rel="noopener">Ver tienda</a><button id="logout" class="btn secondary">Salir</button></div></div>
+    <div class="top"><div class="brand"><div class="mark">T</div><div><h1>Catálogo y precios</h1><small id="admin-email"></small></div></div><div style="display:flex;gap:8px"><a class="btn secondary" href="index.html" target="_blank" rel="noopener">Ver tienda</a><button id="logout" class="btn secondary">Salir</button></div></div>
     <section class="stats"><div class="stat"><span class="muted small">Productos</span><strong id="stat-products">0</strong></div><div class="stat"><span class="muted small">Activos</span><strong id="stat-active">0</strong></div><div class="stat"><span class="muted small">Stock total</span><strong id="stat-stock">0</strong></div><div class="stat"><span class="muted small">Stock bajo</span><strong id="stat-low">0</strong></div></section>
     <section class="settings-card"><strong>Configuración de la tienda</strong><p class="muted small">Este número se usa en el botón de WhatsApp y al confirmar pedidos.</p><div class="settings-row"><div class="field"><label>Número de WhatsApp</label><input id="whatsapp-number" inputmode="numeric" maxlength="15" placeholder="Ej: 56935707722"><span class="small muted">Solo números, incluyendo código de país.</span></div><button id="save-whatsapp" type="button" class="btn primary">Guardar WhatsApp</button></div></section>
     <div class="toolbar"><button id="new-product" class="btn gold">+ Nuevo producto</button><input id="search" placeholder="Buscar producto o SKU"><select id="filter"><option value="all">Todos</option><option value="active">Activos</option><option value="inactive">Inactivos</option><option value="low">Stock bajo</option></select></div>
@@ -39,7 +39,7 @@
       <div class="field"><label>Nombre *</label><input id="name" maxlength="120" required></div>
       <div class="field"><label>SKU *</label><input id="sku" maxlength="60" required></div>
       <div class="field"><label>Categoría</label><select id="category"></select></div>
-      <div class="field"><label>Stock actual (calculado)</label><input id="stock" type="number" min="0" step="1" value="0" readonly><span class="small muted">Se modifica únicamente desde Inventario mediante movimientos.</span></div>
+      <div class="field"><label>Stock actual (calculado)</label><input id="stock" type="number" min="0" step="1" value="0" readonly><span class="small muted">El stock se administra por separado desde el ERP independiente; aquí solo se muestran existencias.</span></div>
       <div class="field"><label>Precio normal CLP *</label><input id="price" type="number" min="0" step="1" required></div>
       <div class="field"><label>Precio oferta CLP</label><input id="sale-price" type="number" min="0" step="1"></div>
       <div class="field"><label>Descuento %</label><input id="discount-percent" type="number" min="0" max="100" step="1" placeholder="Ej: 25"><div id="discount-help" class="small muted">Opcional · se calcula automáticamente.</div></div>
@@ -96,7 +96,7 @@ $('editor').addEventListener('click',e=>{if(e.target===$('editor'))closeEditor()
 ensureAdmin().catch(err=>{console.error(err);showLogin('No se pudo conectar con Supabase.')});
 })();
 </script>
-<script src="orders-admin.js?v=20261104-order-loading-recovery"></script>
-<script src="admin-tabs.js?v=20261103-readycheck"></script>
+<script src="security-admin.js?v=20261106-catalog-only"></script>
+<script src="session-idle.js?v=20261106-catalog-only"></script>
 </body>
 </html>

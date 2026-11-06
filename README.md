@@ -1,32 +1,28 @@
-# TIMELESS
+# TIMELESS · Tienda y editor de catálogo simplificado
 
-Tienda online de accesorios desplegable en GitHub Pages.
+Versión preparada en la rama `refactor/catalogo-simple-20261106`.
 
-## Arquitectura actual
+## Editor reducido
 
-- Frontend: HTML, CSS y JavaScript.
-- Catálogo: Supabase (`products`, `categories`, `product_images`).
-- Carrito: `localStorage` del navegador.
-- Pedidos: la función `create-order` valida productos, disponibilidad y precios en Supabase antes de registrarlos; el cliente puede continuar la coordinación por WhatsApp después de recibir número de pedido.
-- Tablas `orders`, `order_items` y reservas: utilizadas por el proceso de registro de pedidos.
-- Hosting: GitHub Pages.
-- Backend y base de datos: Supabase para catálogo, pedidos, disponibilidad, cobros manuales, auditoría y seguridad. Webpay no está integrado en el flujo actual; el repositorio conserva su adaptador desactivado.
+`admin.html` permite iniciar sesión con la cuenta administradora y administrar **fotografías, productos, nombres, SKU, descripciones, categorías, precios, ofertas, visibilidad, destacados y WhatsApp**.
+
+Se eliminó la carga de la consola ERP y sus módulos (compras, pagos, despachos, Kardex, CRM, auditoría y gerencia). La sesión conserva control de rol, puerta MFA mediante `security-admin.js` y cierre por inactividad mediante `session-idle.js`.
+
+## Tienda
+
+`index.html` y `checkout.js` permanecen sin cambios funcionales: el catálogo, carrito y registro de pedidos siguen utilizando Supabase. No se ha convertido el checkout a WhatsApp directo ni se han alterado los pedidos o stock de producción.
+
+## Stock y arquitectura
+
+El stock sigue siendo **solo lectura** en el editor, porque es mantenido por los movimientos del sistema de inventario y no puede modificarse sin conciliación. Su gestión operativa queda en el ERP separado. La base de datos de Supabase sigue siendo compartida con el ERP, por lo que no se puede afirmar independencia de datos.
 
 ## Seguridad
 
-La documentación de seguridad está disponible en:
+- Esta rama no modifica datos, migraciones, políticas RLS, usuarios ni despliegues.
+- Las credenciales de la cuenta administradora y MFA siguen siendo necesarias.
+- Si se despliega por GitHub Pages, verificar funcionamiento de sesión, edición de imágenes, gestión de precios y compras mediante pruebas reales.
+- La tienda no debe convertirse en un simple catálogo sin antes decidir si el checkout actual será conservado.
 
-- `SECURITY.md`
-- `docs/SECURITY-AUDIT.md`
+## ERP extraído
 
-Los cambios de endurecimiento se desarrollan en la rama `security-hardening` antes de ser revisados e incorporados a `main`.
-
-## Regla principal
-
-No almacenar contraseñas, tokens, `service_role`, claves API privadas ni otros secretos dentro del repositorio público. El frontend utiliza únicamente la publishable key de Supabase y el acceso a datos se controla con RLS.
-
-## Auditoría y pruebas
-
-- `docs/db-audit.sql`: consultas de solo lectura que detectan diferencias entre pedidos, saldos, stock y Kardex.
-- `tests/preflight.test.cjs`: comprobaciones de regresión ejecutadas en GitHub Actions.
-- Los pagos se registran en el módulo Pagos; un pedido confirmado comercialmente no acredita por sí solo el pago.
+El panel completo fue aislado en la rama `export/erp-independiente-20261106`, lista para trasladar a otro repositorio y desplegar separadamente.
