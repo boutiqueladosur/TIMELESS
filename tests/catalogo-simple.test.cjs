@@ -69,3 +69,20 @@ test('Storefront does not disclose internal purchase costs or store credentials'
   assert.doesNotMatch(shop + catalog,/average_cost_clp|unit_cost_clp|supplier_id|SUPABASE_SERVICE_ROLE_KEY|service_role/);
   assert.doesNotMatch(shop,/checkout\.js|id="order-form"/);
 });
+
+test('Official Timeless identity appears on website and administration panel',()=>{
+  const fs=require('node:fs');
+  assert.match(shop,/assets\/timeless-portada\.svg/);
+  assert.match(shop,/assets\/timeless-mariposa\.svg/);
+  assert.match(admin,/assets\/timeless-mariposa\.svg/);
+  assert.ok(fs.existsSync('assets/timeless-portada.svg'));
+  assert.ok(fs.existsSync('assets/timeless-mariposa.svg'));
+  const cover=fs.readFileSync('assets/timeless-portada.svg','utf8');
+  const butterfly=fs.readFileSync('assets/timeless-mariposa.svg','utf8');
+  assert.match(cover,/Carteras y accesorios para mujer/);
+  assert.match(butterfly,/fill-rule="evenodd"/);
+  const style=fs.readFileSync('catalogo-estilo.css','utf8');
+  assert.match(style,/\.hero-banner/);
+  assert.match(style,/\.brand-symbol/);
+  assert.match(style,/\.story-identity/);
+});
