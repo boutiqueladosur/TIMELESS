@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2041 771" role="img" aria-labelledby="title desc">
+<title id="title">Timeless — Carteras y accesorios para mujer</title>
+<desc id="desc">Composición beige y blanca con letras negras, líneas doradas, siluetas de carteras y una rama ornamental.</desc>
+<defs>
+ <radialGradient id="ivory"><stop offset="0" stop-color="#ffffff"/><stop offset=".68" stop-color="#fffefc"/><stop offset="1" stop-color="#f7e8d6"/></radialGradient>
+ <linearGradient id="ribbon" x1="0" x2=".5" y1="0" y2="1"><stop stop-color="#d8aa6b" stop-opacity=".42"/><stop offset=".5" stop-color="#fbf4e9" stop-opacity=".1"/><stop offset="1" stop-color="#c88e44" stop-opacity=".22"/></linearGradient>
+ <linearGradient id="gold" x1="0" x2="1"><stop stop-color="#a85e10"/><stop offset=".4" stop-color="#e0a34e"/><stop offset="1" stop-color="#ae650d"/></linearGradient>
+ <linearGradient id="pale" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffdfb"/><stop offset=".5" stop-color="#f5e9db"/><stop offset="1" stop-color="#fff9f3"/></linearGradient>
+</defs>
+<rect width="2041" height="771" fill="url(#ivory)"/>
+<path d="M0 236 Q95 82 297 6 Q428 -47 510 -120 L660 -104 Q428 164 252 141 Q140 125 0 275Z" fill="url(#ribbon)" opacity=".65"/>
+<path d="M0 245 Q137 56 319 64 Q544 108 659 -15" fill="none" stroke="url(#gold)" stroke-width="4.5"/>
+<path d="M0 735 Q270 598 490 649 Q792 787 990 744 Q1260 660 1438 612 Q1628 566 1791 640 Q1944 716 2041 688 L2041 771H0Z" fill="url(#ribbon)"/>
+<path d="M0 704 Q260 579 480 656 Q765 786 982 759 Q1311 660 1452 619 Q1712 559 1903 663 Q1994 712 2041 706" fill="none" stroke="url(#gold)" stroke-width="4.8"/>
+<path d="M9 757 Q334 660 521 718 Q861 850 1103 763 Q1409 649 1624 665 Q1881 666 2041 747" fill="none" stroke="#fff" stroke-width="3" opacity=".75"/>
+<g fill="none" stroke="url(#gold)" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round" opacity=".95">
+ <!-- left handbag and handles -->
+ <path d="M81 442 Q88 426 105 432 L351 448 Q377 448 379 474 L414 647 Q424 668 405 680 L64 681 Q39 678 47 655Z"/>
+ <path d="M114 453 Q115 351 159 296 Q203 245 258 298 Q305 340 307 464"/>
+ <path d="M137 444 Q139 346 183 301 Q207 278 232 293 Q277 337 279 462"/>
+ <path d="M154 442 Q159 344 204 293 M302 454 Q295 354 257 304"/>
+ <path d="M310 494 L332 497 340 555 315 559Z"/>
+ <path d="M74 656 Q88 675 108 674 L392 674"/>
+ <!-- right satchel -->
+ <path d="M1664 455 Q1687 430 1728 427 L1871 415 Q1930 418 1950 445 L1984 624 Q1987 661 1962 681 L1661 674 Q1638 665 1644 636Z"/>
+ <path d="M1722 429 Q1728 344 1776 335 Q1832 328 1862 421"/>
+ <path d="M1735 429 Q1747 360 1779 350 Q1827 345 1848 421"/>
+ <path d="M1663 466 Q1730 507 1827 507 Q1922 506 1956 472"/>
+ <path d="M1819 508 L1860 506 1857 550 1822 550Z"/>
+</g>
+<g fill="url(#pale)" stroke="url(#gold)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" opacity=".93">
+ <!-- branch in top right -->
+ <path d="M1788 23 Q1904 102 2034 287" fill="none"/>
+ <path d="M1850 88 Q1750 46 1689 111 Q1784 145 1850 88Z"/>
+ <path d="M1907 145 Q1904 49 1801 12 Q1834 102 1907 145Z"/>
+ <path d="M1942 197 Q1947 128 1963 80 Q1998 139 1942 197Z"/>
+ <path d="M1884 127 Q1788 124 1748 196 Q1840 210 1884 127Z"/>
+ <path d="M1994 252 Q1991 205 2009 165 Q2047 214 1994 252Z"/>
+ <path d="M1974 222 Q1886 205 1846 259 Q1920 279 1974 222Z"/>
+</g>
+<g fill="none" stroke="#d8a563" opacity=".42" stroke-width="1.5">
+<path d="M1693 113 Q1770 93 1834 91 M1814 30 Q1852 91 1900 138 M1960 94 Q1960 137 1948 181 M1757 198 Q1802 173 1878 129 M1854 257 Q1900 241 1959 222"/>
+</g>
+<g fill="#070707" text-anchor="middle">
+ <text x="1020" y="399" font-family="Georgia,'Times New Roman',serif" font-size="231" font-weight="500" letter-spacing="12">Timeless</text>
+ <text x="1020" y="492" font-family="Georgia,'Times New Roman',serif" font-size="58" font-style="italic">Carteras y accesorios para mujer</text>
+</g>
+<g fill="none" stroke="url(#gold)" stroke-width="3" stroke-linecap="round">
+<path d="M473 464H609"/><path d="M1430 464H1570"/>
+</g>
+</svg>
