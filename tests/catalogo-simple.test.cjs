@@ -50,3 +50,22 @@ test('All inline scripts parse correctly',()=>{
   }
   assert.doesNotThrow(()=>new vm.Script(catalog));
 });
+
+test('Editorial catalog has product cards, responsive layout and accessible product detail dialog',()=>{
+  const css=readFileSync('catalogo-estilo.css','utf8');
+  assert.match(shop,/catalogo-estilo\.css/);
+  assert.match(shop,/id="product-modal"/);
+  assert.match(shop,/role="dialog" aria-modal="true"/);
+  assert.match(shop,/id="modal-whatsapp"/);
+  assert.match(catalog,/function openDetail/);
+  assert.match(catalog,/function closeDetail/);
+  assert.match(catalog,/data-detail/);
+  assert.match(catalog,/data-modal-image/);
+  assert.match(catalog,/messageLink\(p\)/);
+  assert.match(css,/@media\(max-width:640px\)/);
+  assert.match(css,/\.grid\{display:grid/);
+});
+test('Storefront does not disclose internal purchase costs or store credentials',()=>{
+  assert.doesNotMatch(shop + catalog,/average_cost_clp|unit_cost_clp|supplier_id|SUPABASE_SERVICE_ROLE_KEY|service_role/);
+  assert.doesNotMatch(shop,/checkout\.js|id="order-form"/);
+});
