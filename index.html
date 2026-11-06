@@ -28,7 +28,7 @@
   .media{position:relative}
   .stock-label{position:absolute;top:14px;right:14px;z-index:2;background:#252525;color:#fff;padding:8px 12px;border-radius:8px;font-size:11px;letter-spacing:.08em;font-weight:800;box-shadow:0 3px 12px rgba(0,0,0,.2)}
   .card.stock-out .main-img{filter:grayscale(.7);opacity:.68}
-  .card .add:disabled{background:#dad7d3!important;color:#5d5a58!important;cursor:not-allowed;opacity:1}
+  .card a.add{display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}.card a.add:hover{background:#292929}
   .stock-note{font-size:12px;color:#8a3b36;margin:5px 0 0;font-weight:600}
   </style>
 </head>
@@ -38,7 +38,7 @@
     <nav class="nav">
       <div class="nav-links"><a href="#coleccion">Colección</a><a href="#boutique">Boutique</a></div>
       <a href="#" aria-label="TIMELESS"><img class="brand-logo" src="timeless-logo.svg" alt="TIMELESS Accesorios Boutique"></a>
-      <div class="nav-actions"><button class="cart-btn" id="open-cart" type="button"><i class="fa-solid fa-bag-shopping"></i><span class="label">Mi pedido</span><span class="cart-count" id="cart-count">0</span></button></div>
+      <div class="nav-actions"><a class="cart-btn" id="whatsapp-header" href="https://wa.me/56935707722" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-whatsapp"></i><span class="label">Consultar</span></a></div>
     </nav>
   </header>
   <main>
@@ -49,119 +49,8 @@
   </main>
   <footer class="footer"><div class="footer-inner"><span>© <span id="year"></span> TIMELESS. Todos los derechos reservados.</span><span>Accesorios · Boutique · Chile · <a href="privacidad.html">Política de Privacidad</a></span></div></footer>
   <a class="fab" id="whatsapp-fab" href="https://wa.me/56935707722" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-  <div class="overlay hidden" id="cart-modal"><aside class="drawer"><div class="drawer-head"><h3>Tu pedido</h3><button class="icon-btn" id="close-cart" type="button"><i class="fa-solid fa-xmark"></i></button></div><div class="items" id="cart-items"></div><div class="drawer-foot"><div class="subtotal"><span>Subtotal estimado</span><strong id="total">$0</strong></div><form id="order-form" class="form"><input id="name" required maxlength="160" autocomplete="name" placeholder="Nombre completo *"><input id="location" required maxlength="300" autocomplete="street-address" placeholder="Ciudad / Dirección *"><input id="phone" type="tel" inputmode="tel" maxlength="30" autocomplete="tel" placeholder="Teléfono *" required><textarea id="notes" rows="2" maxlength="1000" placeholder="Notas del pedido"></textarea><button class="send" type="submit"><i class="fa-brands fa-whatsapp"></i> Registrar pedido</button></form></div></aside></div>
   <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
-<script>
-(()=>{
-'use strict';
-let WHATSAPP='56935707722';
-const SUPABASE_URL='https://nfphzvcwxyfkbucwwlcx.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY='sb_publishable_DzvTmxOxVWY4LaKNqx2-xA_4RVK2TtS';
-const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-const STORAGE='timeless_cart_v1';
-const PLACEHOLDER='cartera1234.png';
-let data=[],cart=loadCart(),active='todos',toastTimer;let sellable=new Map(),availabilityReady=false;
-const $=id=>document.getElementById(id);
-const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-const key=v=>norm(v).replace(/[^a-z0-9]/g,'');
-const money=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(Number(v)||0);
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-function price(v){if(typeof v==='number')return Math.max(0,Math.round(v));let s=String(v??'').replace(/[^\d,.-]/g,'');if(!s)return 0;if((/\.\d{3}$/.test(s)||/,\d{3}$/.test(s)))s=s.replace(/[.,]/g,'');else s=s.replace(',','.');const n=Number(s);return Number.isFinite(n)?Math.max(0,Math.round(n)):0}
-function safeImage(v){let s=String(v||'').trim();if(!s)return'';if(s.includes('github.com')&&s.includes('/blob/'))s=s.replace('github.com','raw.githubusercontent.com').replace('/blob/','/');try{const u=new URL(s,location.href);return u.protocol==='https:'?u.href:''}catch{return''}}
-function prop(o,names){const entries=Object.keys(o||{}).map(k=>[k,key(k)]);for(const n of names){const hit=entries.find(x=>x[1]===key(n));if(hit&&o[hit[0]]!=null)return String(o[hit[0]]).trim()}return''}
-const pid=(p,i=0)=>prop(p,['id','codigo','sku','col_0'])||`prod_${i}`;
-const pname=p=>prop(p,['nombre','name','titulo','producto','articulo'])||'Producto';
-const pprice=p=>p.sale_price_clp??p.price_clp??prop(p,['precio','price','valor']);
-const pold=p=>p.sale_price_clp!=null&&Number(p.sale_price_clp)<Number(p.price_clp)?p.price_clp:0;
-const pdiscount=p=>{const old=Number(pold(p))||0,cur=Number(pprice(p))||0;return old>cur&&cur>0?`-${Math.round((1-cur/old)*100)}%`:''};
-const pcat=p=>p.categories?.name||p.categoria||prop(p,['categoria','categoría','tipo'])||'General';
-const pdesc=p=>p.description??prop(p,['descripcion','descripción','detalle']);
-function images(p){if(Array.isArray(p.product_images)&&p.product_images.length){const a=[...p.product_images].sort((x,y)=>(Number(y.is_primary)-Number(x.is_primary))||((x.sort_order||0)-(y.sort_order||0))).map(x=>safeImage(x.image_url)).filter(Boolean);if(a.length)return [...new Set(a)]}const a=[prop(p,['imagen_1','imagen1','imagen','image','foto','url']),prop(p,['imagen_2','imagen2','foto2']),prop(p,['imagen_3','imagen3','foto3']),prop(p,['imagen_4','imagen4','foto4'])].map(safeImage).filter(Boolean);return [...new Set(a)].length?[...new Set(a)]:[PLACEHOLDER]}
-function loadCart(){try{return (JSON.parse(localStorage.getItem(STORAGE)||'[]')||[]).filter(Boolean)}catch{return[]}}
-function save(){try{localStorage.setItem(STORAGE,JSON.stringify(cart))}catch{}}
-function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200)}
-function buildCategories(){const cats=[...new Set(data.map(pcat).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));$('categories').innerHTML=[['todos','Todos'],...cats.map(c=>[norm(c),c])].map(([v,l])=>`<button type="button" class="chip ${active===v?'active':''}" data-cat="${esc(v)}">${esc(l)}</button>`).join('')}
-function visible(){const term=norm($('search').value),sort=$('sort').value;let list=data.filter(p=>(active==='todos'||norm(pcat(p))===active)&&(!term||norm([pname(p),pcat(p),pdesc(p)].join(' ')).includes(term)));if(sort==='price-asc')list.sort((a,b)=>price(pprice(a))-price(pprice(b)));if(sort==='price-desc')list.sort((a,b)=>price(pprice(b))-price(pprice(a)));if(sort==='name')list.sort((a,b)=>pname(a).localeCompare(pname(b),'es'));return list}
-function available(id){return availabilityReady?Math.max(0,Number(sellable.get(String(id))||0)):0}
-function render(){const list=visible();$('count').textContent=`${list.length} producto${list.length===1?'':'s'}`;$('filter-label').textContent=active==='todos'?'':'Filtro activo';$('grid').innerHTML=list.length?list.map(p=>{const i=data.indexOf(p),id=pid(p,i),name=pname(p),imgs=images(p),pr=price(pprice(p)),old=price(pold(p)),disc=pdiscount(p);const remaining=available(id),out=remaining<1;return `<article class="card ${out?'stock-out':''}" data-id="${esc(id)}"><div class="media">${out?'<span class="stock-label">SIN STOCK</span>':''}<img class="main-img" src="${esc(imgs[0])}" alt="${esc(name)}" loading="lazy"><span class="tag">${esc(pcat(p))}</span>${disc?`<span class="discount">${esc(disc)}</span>`:''}</div>${imgs.length>1?`<div class="thumbs">${imgs.map((src,j)=>`<button class="thumb ${j===0?'active':''}" type="button" data-image="${esc(src)}"><img src="${esc(src)}" alt=""></button>`).join('')}</div>`:'<div class="thumbs" aria-hidden="true"></div>'}<div class="body"><h3>${esc(name)}</h3><div class="desc">${esc(pdesc(p)||'Pieza seleccionada de nuestra colección TIMELESS.')}</div><div class="price">${old>pr&&pr>0?`<span class="old">${money(old)}</span>`:''}<span class="current">${pr?money(pr):'Consultar'}</span></div><button class="add" type="button" data-add="${esc(id)}" ${out?'disabled aria-disabled="true"':''}>${out?'Sin stock':'<i class="fa-solid fa-bag-shopping"></i> Agregar al pedido'}</button>${!out&&remaining<=3?`<p class="stock-note">Últimas ${remaining} unidad${remaining===1?'':'es'}</p>`:''}</div></article>`}).join(''):'<div class="loader" style="grid-column:1/-1">No encontramos productos con esos filtros.</div>'}
-function add(id){
- const p=data.find((x,i)=>String(pid(x,i))===String(id));
- if(!p)return toast('No se encontró el producto.');
- const left=available(id),existing=cart.find(x=>String(x.id)===String(id));
- if(!left)return toast('Este producto está sin stock.');
- if((existing?.qty||0)>=left)return toast('No quedan más unidades disponibles.');
- const i=data.indexOf(p);
- if(existing)existing.qty+=1;
- else cart.push({id,name:pname(p),price:price(pprice(p)),image:images(p)[0],qty:1});
- save();renderCart();toast('Producto agregado al pedido.');
-}
-function syncCartWithStock(){
- if(!availabilityReady)return;
- let changed=false;
- cart=cart.filter(x=>{
-  const max=available(x.id);
-  if(max<1){changed=true;return false}
-  const qty=Math.min(Math.max(1,Number(x.qty)||1),max);
-  if(qty!==x.qty){x.qty=qty;changed=true}
-  return true
- });
- if(changed){save();toast('Actualizamos tu carrito según el stock disponible.')}
- renderCart();
-}
-function renderCart(){const qty=cart.reduce((s,x)=>s+(x.qty||1),0),total=cart.reduce((s,x)=>s+(Number(x.price)||0)*(x.qty||1),0);$('cart-count').textContent=qty;$('total').textContent=money(total);$('cart-items').innerHTML=cart.length?cart.map(x=>`<div class="cart-row"><img src="${esc(x.image||PLACEHOLDER)}" alt="${esc(x.name)}"><div><div class="cart-name">${esc(x.name)}</div><div class="cart-price">${x.price?money(x.price):'Consultar'}</div><div class="qty"><button data-qty="${esc(x.id)}" data-delta="-1">−</button><span>${x.qty||1}</span><button data-qty="${esc(x.id)}" data-delta="1">+</button></div></div><button class="icon-btn" data-remove="${esc(x.id)}"><i class="fa-solid fa-trash"></i></button></div>`).join(''):'<div class="loader">Tu pedido está vacío.</div>'}
-function openCart(){$('cart-modal').classList.remove('hidden');document.body.style.overflow='hidden'}function closeCart(){$('cart-modal').classList.add('hidden');document.body.style.overflow=''}
-async function loadStoreSettings(){
-  try{
-    const {data:settings,error}=await supabaseClient.from('store_settings').select('whatsapp_number').eq('id',1).single();
-    if(error)throw error;
-    const number=String(settings?.whatsapp_number||'').replace(/\D/g,'');
-    if(number){
-      WHATSAPP=number;
-      const link=$('whatsapp-link');if(link)link.href=`https://wa.me/${WHATSAPP}`;
-      const fab=$('whatsapp-fab');if(fab)fab.href=`https://wa.me/${WHATSAPP}`;
-    }
-  }catch(e){console.warn('Store settings unavailable; using fallback WhatsApp.',e)}
-}
-async function loadCatalog(){
-  try{
-    const {data:rows,error}=await supabaseClient
-      .from('products')
-      .select('id,sku,name,description,price_clp,sale_price_clp,is_featured,categories(name),product_images(image_url,sort_order,is_primary)')
-      .eq('is_active',true)
-      .order('is_featured',{ascending:false})
-      .order('name',{ascending:true});
-    if(error)throw error;
-    data=rows||[];
-    const {data:availability,error:stockError}=await supabaseClient.rpc('get_public_product_availability');
-    if(stockError)throw stockError;
-    sellable=new Map((availability||[]).map(r=>[String(r.product_id),Math.max(0,Number(r.available)||0)]));
-    availabilityReady=true;
-    syncCartWithStock();
-    $('loader')?.remove();
-    buildCategories();
-    render();
-  }catch(e){
-    console.error('Supabase catalog error',e);
-    availabilityReady=false;sellable=new Map();render();
-    const loader=$('loader');if(loader)loader.textContent='No se pudo consultar la disponibilidad. Intenta recargar la página.';
-  }
-}
-document.addEventListener('click',e=>{const a=e.target.closest('[data-add]');if(a)return add(a.dataset.add);const c=e.target.closest('[data-cat]');if(c){active=c.dataset.cat;buildCategories();return render()}const th=e.target.closest('.thumb');if(th){const card=th.closest('.card');card.querySelector('.main-img').src=th.dataset.image;card.querySelectorAll('.thumb').forEach(b=>b.classList.toggle('active',b===th));return}const q=e.target.closest('[data-qty]');if(q){
- const x=cart.find(i=>String(i.id)===String(q.dataset.qty));
- if(x){
-  const requested=(x.qty||1)+Number(q.dataset.delta);
-  if(requested>available(x.id))return toast('No hay más unidades vendibles.');
-  if(requested<=0)cart=cart.filter(i=>i.id!==x.id);
-  else x.qty=requested;
-  save();renderCart();
- }
- return
-}const rm=e.target.closest('[data-remove]');if(rm){cart=cart.filter(i=>i.id!==rm.dataset.remove);save();renderCart()}});
-$('open-cart').addEventListener('click',openCart);$('close-cart').addEventListener('click',closeCart);$('cart-modal').addEventListener('click',e=>{if(e.target===$('cart-modal'))closeCart()});$('search').addEventListener('input',render);$('sort').addEventListener('change',render);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCart()});
-$('year').textContent=new Date().getFullYear();renderCart();loadStoreSettings();loadCatalog();
-})();
-</script>
-<script src="checkout.js?v=20261103-stockfix"></script>
+<script src="catalogo-publico.js?v=20261106-catalog"></script>
 </body>
 </html>
