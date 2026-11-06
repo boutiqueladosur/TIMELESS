@@ -28,3 +28,14 @@ La tienda usa `catalogo-estilo.css` y `catalogo-publico.js` para una presentaci�
 Referencia visual solicitada: https://timelesstco.netlify.app/ . **No se ha podido verificar su contenido visual desde la herramienta de navegación**; el estilo implementado es una aproximación editorial, no una reproducción comprobada.
 
 Los cambios están en una rama y un PR en borrador; **aún no se ha publicado en Netlify ni fusionado a GitHub Pages**. No hay conexión directa disponible con la cuenta Netlify para desplegar este sitio.
+
+## Identidad visual oficial (6 noviembre 2026)
+Se tomaron como referencia las dos imágenes aprobadas por la tienda: portada blanca/beige con curvas y carteras en dorado, y mariposa negra sobre blanco.
+
+- `assets/timeless-portada.svg`: adaptación vectorial ligera de los elementos de la portada de Facebook. No es una reproducción fotográfica exacta del PNG original.
+- `assets/timeless-mariposa.svg`: vectorización del símbolo negro de la foto de perfil.
+- `index.html` muestra la portada, el símbolo y el nombre de la marca.
+- `catalogo-estilo.css` conserva la paleta blanco, beige, negro y dorado con soporte móvil.
+- `admin.html` incorpora la misma identidad sin alterar la autenticación ni los datos de Supabase.
+
+El frontend permanece en la rama de revisión y no se ha publicado en Netlify ni en GitHub Pages.
