@@ -21,10 +21,10 @@ jobs:
         run: |
           test -f index.html
           test -f admin.html
-          test -f checkout.js
+          test -f catalogo-publico.js
           test -f security-admin.js
           test -f session-idle.js
-          test -f supabase/functions/create-order/index.ts
+          test ! -f checkout.js
       - name: Prevent server secrets in public frontend
         run: |
           if grep -R -n -E 'SUPABASE_SERVICE_ROLE_KEY|service_role' --include='*.js' --include='*.html' . --exclude-dir=supabase --exclude-dir=.git; then exit 1; fi
