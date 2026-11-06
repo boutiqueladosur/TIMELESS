@@ -20,3 +20,11 @@ Esta rama contiene **solo la tienda pública** y un panel protegido para adminis
 
 ## ERP separado
 El ERP completo está guardado en `export/erp-independiente-20261106`, listo para trasladarlo a un repositorio distinto. No debe reutilizarse en la tienda. La separación de datos entre proyectos es una tarea posterior y diferente.
+
+## Presentación editorial del catálogo
+
+La tienda usa `catalogo-estilo.css` y `catalogo-publico.js` para una presentación de estilo boutique: fotografía principal 4:5, precio, descuento cuando corresponde, categorías, búsqueda, detalle con galería y contacto por WhatsApp. Las fotos y precios vienen de Supabase; no se duplican en el HTML.
+
+Referencia visual solicitada: https://timelesstco.netlify.app/ . **No se ha podido verificar su contenido visual desde la herramienta de navegación**; el estilo implementado es una aproximación editorial, no una reproducción comprobada.
+
+Los cambios están en una rama y un PR en borrador; **aún no se ha publicado en Netlify ni fusionado a GitHub Pages**. No hay conexión directa disponible con la cuenta Netlify para desplegar este sitio.
