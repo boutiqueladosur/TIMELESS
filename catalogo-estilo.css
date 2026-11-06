@@ -113,3 +113,79 @@ body.modal-open{overflow:hidden}
 @media(max-width:640px){.nav{min-height:69px;grid-template-columns:1fr auto;padding:9px 16px}.brand{justify-content:flex-start}.brand-logo{width:160px}.nav-links{display:none}.contact-mini{padding:11px 12px;font-size:9px}.contact-mini .label{display:none}.hero-inner{display:block;padding:46px 18px 50px;min-height:0}.hero h1{font-size:clamp(62px,12vw,84px)}.hero-aside{display:none}.benefits-inner{display:block;text-align:center;padding:12px 10px}.benefit{display:inline-flex;margin:6px 10px;font-size:9px}.catalog{padding:55px 14px 72px}.catalog-intro{display:block}.catalog-intro h2{font-size:52px}.catalog-intro p{margin-top:12px}.toolbar{display:block}.sort-wrap{justify-content:flex-end;border-top:1px solid var(--line)}.search{max-width:none}.grid{gap:30px 12px}.card h3{font-size:22px;min-height:48px}.card .desc{font-size:10px}.card .actions{grid-template-columns:1fr}.card .details{display:none}.card .price{margin:12px 0}.card .current{font-size:13px}.card .thumbs{display:none}.story-inner{display:block;padding:52px 22px}.story-logo{max-width:210px}.story h3{font-size:38px}.footer-inner{display:block;text-align:center;line-height:1.9}.product-modal{grid-template-columns:1fr;max-height:90vh}.modal-media{padding:10px}.modal-media .large{max-height:290px;aspect-ratio:1/1}.modal-info{padding:18px 22px 24px}.modal-info h2{font-size:38px}}
 @media(max-width:380px){.grid{grid-template-columns:1fr}.card .details{display:block}.card .actions{grid-template-columns:1fr auto}.hero h1{font-size:54px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
+
+/* Identidad TIMELESS: blanco marfil, curvas doradas, tipografía negra y mariposa original */
+:root{--ink:#100f0e;--muted:#72685e;--cream:#fffaf4;--sand:#f7ecdf;--gold:#c17b25;--gold-ink:#9d6018;--line:#e6d6c0;--paper:#fffdf9;--black:#101010}
+body{background:linear-gradient(180deg,#fffefc 0%,#fff8ef 100%)}
+.announcement{background:#101010;color:#f6e6d3}
+.header{background:rgba(255,253,249,.96);border-bottom:1px solid #e6ccaa}
+.brand{gap:8px;white-space:nowrap}
+.brand-symbol{height:52px;width:52px;display:block;object-fit:contain}
+.brand-wordmark{font:500 clamp(29px,3vw,43px)/1 Georgia,'Times New Roman',serif;letter-spacing:.015em;color:#0c0c0c}
+.brand-dot{color:#cb8425}
+.nav-links{font-size:10px;letter-spacing:.09em}
+.contact-mini{border:1px solid #bc7d32;background:#fffaf4}
+.contact-mini:hover{background:#a26418;border-color:#a26418;color:#fff}
+.hero-branded{background:#fffdfb;border-bottom:1px solid #d7b382}
+.hero-identity{width:100%;max-width:2041px;margin:0 auto;overflow:hidden}
+.hero-banner{width:100%;height:auto;display:block;aspect-ratio:2041/771;object-fit:contain}
+.hero-cta-strip{display:flex;align-items:center;justify-content:space-between;gap:28px;max-width:1390px;margin:auto;padding:25px clamp(16px,4.4vw,66px) 28px}
+.hero-cta-strip p{font-size:12px;line-height:1.7;margin:5px 0 0;color:#695c4e}
+.hero-cta{margin:0;gap:20px;flex-shrink:0}
+.btn-dark{background:#13100d}
+.btn-dark:hover{background:#965d21}
+.text-link{border-color:#b87928;color:#875215}
+.benefits{background:#fff8ef;border-bottom:1px solid #e5c9a5}
+.benefit:before{color:#b57721}
+.catalog{background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,250,245,0));}
+.catalog-intro h2,.story h3{font-family:Georgia,'Times New Roman',serif;letter-spacing:-.025em}
+.chip.active,.chip:hover{background:#16120f;border-color:#a96e25}
+.media{background:#fffdf9;border:1px solid #eddcc7}
+.card:hover .media{border-color:#c99c63}
+.category{color:#a86816}
+.feature-label{border:1px solid #d9b886}
+.discount{background:#fff4dd;color:#986014}
+.stock-label{background:#25201a}
+.add{background:#15110f}
+.add:hover{background:#9b621c}
+.details{border-color:#dfc4a1}
+.details:hover{border-color:#b27731}
+.story{background:#171310;position:relative;overflow:hidden}
+.story:before{content:'';position:absolute;left:-6%;top:-150px;width:65%;height:260px;border:2px solid #af722e;border-radius:50%;transform:rotate(-9deg);opacity:.45;pointer-events:none}
+.story:after{content:'';position:absolute;right:-15%;bottom:-170px;width:65%;height:250px;border:2px solid #b87f38;border-radius:50%;transform:rotate(-13deg);opacity:.45;pointer-events:none}
+.story-inner{position:relative;z-index:1}
+.story-identity{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;max-width:360px;margin:auto}
+.story-logo{width:195px;max-width:80%;height:185px;object-fit:contain;filter:invert(1) brightness(1.2)}
+.story-wordmark{font:500 58px/1 Georgia,'Times New Roman',serif;color:#fff}
+.story-subtitle{font:italic 15px/1.5 Georgia,'Times New Roman',serif;letter-spacing:.06em;color:#eac79d;text-align:center}
+.story .eyebrow{color:#dbab6e}
+.modal-layer{background:#100b07d4}
+.modal-media{background:#fffaf5}
+.footer{background:#100d0a}
+@media(max-width:940px){
+ .hero-cta-strip{padding:20px 25px}
+ .story-identity{align-items:flex-start}
+ .story-logo{margin-left:0}
+}
+@media(max-width:640px){
+ .nav{grid-template-columns:1fr auto}
+ .brand-symbol{height:39px;width:39px}
+ .brand-wordmark{font-size:30px}
+ .nav-actions{justify-content:flex-end}
+ .hero-identity{background:#fffdfb}
+ .hero-banner{min-height:180px;object-fit:cover;object-position:center}
+ .hero-cta-strip{display:block;padding:18px 18px 22px;text-align:center}
+ .hero-cta-strip p{margin-top:8px;font-size:11px}
+ .hero-cta{justify-content:center;margin-top:19px;gap:11px}
+ .hero-cta .btn-dark{padding:13px 14px}
+ .hero-cta .text-link{font-size:9px}
+ .story-identity{align-items:center;margin:0 auto 25px}
+ .story-logo{height:130px;width:160px}
+ .story-wordmark{font-size:48px}
+}
+@media(max-width:380px){
+ .brand-wordmark{font-size:26px}
+ .brand-symbol{height:34px;width:34px}
+ .hero-banner{min-height:145px}
+ .hero-cta .text-link{font-size:9px}
+}
