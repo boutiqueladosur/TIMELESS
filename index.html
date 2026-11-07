@@ -81,6 +81,16 @@
       <div id="loader" class="loader" role="status">Cargando productos desde TIMELESS…</div>
       <div id="grid" class="grid" aria-live="polite"></div>
     </section>
+    <section class="purchase-guide" id="como-comprar" aria-labelledby="guide-title">
+      <div class="purchase-guide-inner">
+        <header class="guide-heading"><span class="eyebrow">Compras con información clara</span><h2 id="guide-title">Encuentra tu favorita. Nosotros te ayudamos con los detalles.</h2></header>
+        <div class="guide-grid">
+          <article class="guide-card"><span class="guide-index">01</span><h3>Conoce el producto</h3><p>Revisa sus fotografías y precio. Puedes consultar dimensiones, material y características antes de decidir.</p></article>
+          <article class="guide-card"><span class="guide-index">02</span><h3>Consulta tu despacho</h3><p>Confirma disponibilidad, costo y plazo de entrega según tu comuna antes de realizar el pago.</p></article>
+          <article class="guide-card"><span class="guide-index">03</span><h3>Compra informada</h3><p>Coordina las formas de pago, garantías y cambios por WhatsApp antes de comprar.</p></article>
+        </div>
+      </div>
+    </section>
     <section class="story" id="boutique" aria-labelledby="story-title">
       <div class="story-inner">
         <div class="story-identity"><img class="story-logo" src="assets/timeless-mariposa.svg" alt="Mariposa TIMELESS" loading="lazy"><span class="story-wordmark">Timeless</span><span class="story-subtitle">Carteras y accesorios para mujer</span></div>
@@ -93,14 +103,25 @@
   <div class="modal-layer" id="product-modal" role="presentation" hidden>
     <div class="product-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <button class="modal-close" type="button" id="modal-close" aria-label="Cerrar detalle de producto">×</button>
-      <div class="modal-media"><img class="large" id="modal-photo" src="" alt=""><div class="modal-thumbs" id="modal-thumbs"></div></div>
+      <div class="modal-media">
+        <div class="modal-photo-stage">
+          <button class="modal-gallery-arrow prev" id="modal-prev" type="button" aria-label="Ver fotografía anterior" hidden>‹</button>
+          <img class="large" id="modal-photo" src="" alt="">
+          <button class="modal-gallery-arrow next" id="modal-next" type="button" aria-label="Ver fotografía siguiente" hidden>›</button>
+        </div>
+        <p class="modal-count" id="modal-count" aria-live="polite"></p>
+        <div class="modal-thumbs" id="modal-thumbs" aria-label="Fotografías del producto"></div>
+      </div>
       <div class="modal-info">
         <div class="eyebrow" id="modal-category"></div>
         <h2 id="modal-title"></h2>
         <div class="info-price" id="modal-price"></div>
         <p class="info-description" id="modal-description"></p>
         <div class="info-meta" id="modal-info"></div>
-        <a class="add" id="modal-whatsapp" href="https://wa.me/56935707722" target="_blank" rel="noopener noreferrer">Consultar este modelo por WhatsApp</a>
+        <p class="modal-help">¿Necesitas saber sus medidas, material o valor de despacho? Consúltanos y te ayudaremos.</p>
+        <a class="add" id="modal-whatsapp" href="https://wa.me/56935707722" target="_blank" rel="noopener noreferrer">Consultar esta cartera por WhatsApp</a>
+        <button class="modal-copy" id="modal-copy" type="button">Copiar enlace del producto</button>
+        <div class="modal-copy-status" id="modal-copy-status" role="status" aria-live="polite"></div>
       </div>
     </div>
   </div>
