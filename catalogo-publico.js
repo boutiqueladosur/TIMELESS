@@ -57,7 +57,7 @@ function render(){
       +'<div class="actions"><a class="add" href="'+esc(messageLink(p))+'" target="_blank" rel="noopener noreferrer">'+(out?'Consultar disponibilidad':'Consultar por WhatsApp')+'</a>'
       +'<button type="button" class="details" data-detail="'+esc(p.id)+'" aria-label="Ver fotografías y detalles de '+esc(p.name)+'">Ver fotos y detalles</button></div>'
       +'</div></article>';
-  }).join('')||(loadingError?'<div class="loader" style="grid-column:1/-1">No fue posible cargar los productos. Recarga la página.</div>':'<div class="loader" style="grid-column:1/-1">No hay productos que coincidan.</div>');
+  }).join('')||(loadingError?'<div class="loader catalog-error" style="grid-column:1/-1"><p>No pudimos conectar con el catálogo en este momento.</p><button type="button" class="details" id="retry-catalog">Volver a intentar</button></div>':'<div class="loader" style="grid-column:1/-1">No hay productos que coincidan.</div>');
 }
 let lastModalFocus=null;
 function openDetail(id,updateUrl=true){
@@ -119,6 +119,7 @@ async function loadCatalog(){
   $('loader')?.remove();render();
 }
 document.addEventListener('click',event=>{
+  const retry=event.target.closest('#retry-catalog');if(retry){loadingError=false;$('loader')?.remove();$('grid').innerHTML='<div class="loader" role="status">Reconectando con el catálogo…</div>';loadCatalog();return}
   const c=event.target.closest('[data-cat]');if(c){selected=c.dataset.cat;buildCategories();render();return}
   const d=event.target.closest('[data-detail]');if(d){openDetail(d.dataset.detail);return}
   const m=event.target.closest('[data-modal-index]');if(m){showImage(Number(m.dataset.modalIndex));return}
