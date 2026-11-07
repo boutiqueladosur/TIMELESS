@@ -60,7 +60,7 @@ test('Editorial catalog has product cards, responsive layout and accessible prod
   assert.match(catalog,/function openDetail/);
   assert.match(catalog,/function closeDetail/);
   assert.match(catalog,/data-detail/);
-  assert.match(catalog,/data-modal-image/);
+  assert.match(catalog,/data-modal-index/);
   assert.match(catalog,/messageLink\(p\)/);
   assert.match(css,/@media\(max-width:640px\)/);
   assert.match(css,/\.grid\{display:grid/);
@@ -85,4 +85,39 @@ test('Official Timeless identity appears on website and administration panel',()
   assert.match(style,/\.hero-banner/);
   assert.match(style,/\.brand-symbol/);
   assert.match(style,/\.story-identity/);
+});
+
+test('Mobile catalog keeps the product-detail button visible and touch gallery navigation',()=>{
+  const css=readFileSync('catalogo-estilo.css','utf8');
+  assert.match(catalog,/data-detail/);
+  assert.match(catalog,/Ver fotos y detalles/);
+  assert.match(css,/\.card \.details\{display:flex!important/);
+  assert.match(shop,/id="modal-prev"/);
+  assert.match(shop,/id="modal-next"/);
+  assert.match(shop,/id="modal-count"/);
+  assert.match(catalog,/touchstart/);
+  assert.match(catalog,/touchend/);
+  assert.match(catalog,/showImage\(modalIndex/);
+});
+test('Every product can be shared and opened from a direct URL',()=>{
+  assert.match(catalog,/function productLink/);
+  assert.match(catalog,/searchParams\.set\('producto'/);
+  assert.match(catalog,/URLSearchParams\(location\.search\)\.get\('producto'/);
+  assert.match(catalog,/history\.pushState/);
+  assert.match(catalog,/window\.addEventListener\('popstate'/);
+  assert.match(shop,/id="modal-copy"/);
+  assert.match(catalog,/navigator\.clipboard\.writeText/);
+});
+test('Honest WhatsApp process, buying guidance and updated privacy',()=>{
+  const privacy=readFileSync('privacidad.html','utf8');
+  assert.match(shop,/id="como-comprar"/);
+  assert.match(shop,/Confirma disponibilidad, costo y plazo/);
+  assert.match(catalog,/Cuánto cuesta el despacho/);
+  assert.match(privacy,/No ofrece carrito de compra ni registra pedidos automáticamente/);
+  assert.doesNotMatch(privacy,/La tienda utiliza almacenamiento local del navegador para conservar los productos/);
+});
+test('Public storefront has a single semantic H1 and canonical URL',()=>{
+  assert.equal((shop.match(/<h1(?:\s|>)/g)||[]).length,1);
+  assert.match(shop,/rel="canonical"/);
+  assert.match(shop,/TIMELESS TCO: carteras y accesorios/);
 });

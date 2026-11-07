@@ -189,3 +189,50 @@ body{background:linear-gradient(180deg,#fffefc 0%,#fff8ef 100%)}
  .hero-banner{min-height:145px}
  .hero-cta .text-link{font-size:9px}
 }
+
+/* Mejoras de conversión y accesibilidad móvil — 2026-11-07 */
+.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.card .actions{grid-template-columns:minmax(0,1fr) auto}
+.card .details{min-height:44px;min-width:112px;border-color:#bc8954;color:#392819;background:#fffdf9;font-weight:600;white-space:nowrap}
+.card .details:hover,.card .details:focus-visible{background:#f6e9d9;border-color:#976026}
+.card .add{min-height:46px}
+.card .media .main-img{object-fit:contain}
+.card .body h3{height:auto;min-height:55px}
+.purchase-guide{background:#f8eee1;border-top:1px solid #e7cda6;border-bottom:1px solid #e7cda6;padding:56px 0 66px}
+.purchase-guide-inner{max-width:1270px;margin:auto;padding:0 24px}
+.guide-heading{text-align:center;margin-bottom:29px}
+.guide-heading h2{font:500 clamp(31px,4vw,47px)/1.05 Georgia,'Times New Roman',serif;margin:12px auto 0;max-width:780px}
+.guide-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.guide-card{background:#fffdfa;border:1px solid #e9d6bb;padding:24px 24px 27px;min-width:0}
+.guide-index{font:500 28px/1 Georgia,serif;color:#9f661d}
+.guide-card h3{font:500 25px/1.12 Georgia,serif;margin:14px 0}
+.guide-card p{font:12px/1.85 Montserrat,Arial,sans-serif;color:#65594f;margin:0}
+.modal-photo-stage{position:relative;display:flex;align-items:center;justify-content:center;max-width:100%;min-height:290px}
+.modal-photo-stage .large{display:block;width:100%;height:auto;max-height:455px;aspect-ratio:4/5;object-fit:contain}
+.modal-gallery-arrow{position:absolute;z-index:3;top:50%;transform:translateY(-50%);width:45px;height:45px;border:1px solid #ceb592;background:#fffefaed;color:#302419;font:32px/1 Georgia,serif;border-radius:50%;display:grid;place-items:center}
+.modal-gallery-arrow.prev{left:4px}
+.modal-gallery-arrow.next{right:4px}
+.modal-count{font-size:11px;letter-spacing:.08em;color:#745f46;text-align:center;margin:10px 0 4px}
+.modal-help{font:12px/1.8 Montserrat,Arial,sans-serif;color:#71604e}
+.modal-copy{align-self:flex-start;margin-top:14px;background:transparent;border:0;border-bottom:1px solid #a16d34;color:#66431e;padding:6px 0;font-size:11px;letter-spacing:.03em}
+.modal-copy-status{font-size:11px;line-height:1.5;color:#655241;overflow-wrap:anywhere;margin-top:8px}
+.modal-layer .product-modal{overscroll-behavior:contain}
+@media(max-width:940px){.guide-grid{gap:10px}.guide-card{padding:18px}}
+@media(max-width:640px){
+ .card .actions{display:flex;flex-direction:column;align-items:stretch;gap:9px}
+ .card .details{display:flex!important;justify-content:center;align-items:center;min-width:0;width:100%;font-size:11px;min-height:44px}
+ .card .add{min-height:49px;font-size:10px;text-align:center}
+ .card .thumbs{display:none}
+ .card h3{font-size:22px;min-height:48px}
+ .purchase-guide{padding:45px 0}
+ .purchase-guide-inner{padding:0 15px}
+ .guide-grid{grid-template-columns:1fr;gap:11px}
+ .guide-card{padding:18px 21px}
+ .modal-photo-stage .large{aspect-ratio:1/1;max-height:310px;min-height:240px}
+ .modal-photo-stage{min-height:240px}
+ .modal-info{padding:20px 21px 26px}
+ .modal-info .add{width:100%;min-height:50px}
+ .modal-gallery-arrow{width:42px;height:42px}
+ .modal-copy{align-self:center}
+}
+@media(max-width:380px){.card .actions{display:flex;flex-direction:column}.card .details{width:100%}}
