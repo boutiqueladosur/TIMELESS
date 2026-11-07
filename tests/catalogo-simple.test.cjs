@@ -60,7 +60,7 @@ test('Editorial catalog has product cards, responsive layout and accessible prod
   assert.match(catalog,/function openDetail/);
   assert.match(catalog,/function closeDetail/);
   assert.match(catalog,/data-detail/);
-  assert.match(catalog,/data-modal-image/);
+  assert.match(catalog,/data-modal-index/);
   assert.match(catalog,/messageLink\(p\)/);
   assert.match(css,/@media\(max-width:640px\)/);
   assert.match(css,/\.grid\{display:grid/);
@@ -102,7 +102,7 @@ test('Mobile catalog keeps the product-detail button visible and touch gallery n
 test('Every product can be shared and opened from a direct URL',()=>{
   assert.match(catalog,/function productLink/);
   assert.match(catalog,/searchParams\.set\('producto'/);
-  assert.match(catalog,/searchParams\.get\('producto'/);
+  assert.match(catalog,/URLSearchParams\(location\.search\)\.get\('producto'/);
   assert.match(catalog,/history\.pushState/);
   assert.match(catalog,/window\.addEventListener\('popstate'/);
   assert.match(shop,/id="modal-copy"/);
