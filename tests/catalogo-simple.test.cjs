@@ -121,3 +121,26 @@ test('Public storefront has a single semantic H1 and canonical URL',()=>{
   assert.match(shop,/rel="canonical"/);
   assert.match(shop,/TIMELESS TCO: carteras y accesorios/);
 });
+
+test('Admin requires MFA and protects against partial image upload failures',()=>{
+  assert.match(admin,/async function requireMfa/);
+  assert.match(admin,/currentLevel!=='aal2'/);
+  assert.match(admin,/async function rollbackUploadedImages/);
+  assert.match(admin,/await rollbackUploadedImages\(productId,created\)/);
+  assert.match(admin,/if\(!metadataUpdated&&createdImages\.length\)/);
+  assert.match(admin,/\{\.\.\.payload,is_active:false\}/);
+  assert.match(admin,/validateImageFiles\(files\)/);
+  assert.match(admin,/data-primary/);
+  assert.match(admin,/db\.rpc\('set_product_primary_image'/);
+  assert.doesNotMatch(admin,/update\(\{is_primary:false\}\)\.eq\('product_id'/);
+});
+test('Admin can recover from a failed catalog load',()=>{
+  assert.match(admin,/id="retry-load"/);
+  assert.match(admin,/id="admin-retry"/);
+  assert.match(admin,/loadAll\(\)\.catch/);
+  assert.match(admin,/admin-retry'\)\.classList\.remove\('hidden'\)/);
+});
+test('Catalog has a retry action for Supabase failures',()=>{
+  assert.match(catalog,/id="retry-catalog"/);
+  assert.match(catalog,/loadCatalog\(\);return/);
+});

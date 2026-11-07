@@ -43,7 +43,8 @@ body{background:linear-gradient(150deg,#fffefd,#fff5e9);color:var(--ink)}
   <main class="shell">
     <div class="top"><div class="brand"><div class="mark mark-butterfly"><img src="assets/timeless-mariposa.svg" alt=""></div><div><h1>Catálogo y precios</h1><small id="admin-email"></small></div></div><div style="display:flex;gap:8px"><a class="btn secondary" href="index.html" target="_blank" rel="noopener">Ver tienda</a><button id="logout" class="btn secondary">Salir</button></div></div>
     <section class="stats"><div class="stat"><span class="muted small">Productos</span><strong id="stat-products">0</strong></div><div class="stat"><span class="muted small">Activos</span><strong id="stat-active">0</strong></div><div class="stat"><span class="muted small">Stock total</span><strong id="stat-stock">0</strong></div><div class="stat"><span class="muted small">Stock bajo</span><strong id="stat-low">0</strong></div></section>
-    <section class="settings-card"><strong>Configuración de la tienda</strong><p class="muted small">Este número se usa en el botón de WhatsApp y al confirmar pedidos.</p><div class="settings-row"><div class="field"><label>Número de WhatsApp</label><input id="whatsapp-number" inputmode="numeric" maxlength="15" placeholder="Ej: 56935707722"><span class="small muted">Solo números, incluyendo código de país.</span></div><button id="save-whatsapp" type="button" class="btn primary">Guardar WhatsApp</button></div></section>
+    <section class="settings-card"><strong>Configuración de la tienda</strong><p class="muted small">Este número se usa en las consultas del catálogo por WhatsApp.</p><div class="settings-row"><div class="field"><label>Número de WhatsApp</label><input id="whatsapp-number" inputmode="numeric" maxlength="15" placeholder="Ej: 56935707722"><span class="small muted">Solo números, incluyendo código de país.</span></div><button id="save-whatsapp" type="button" class="btn primary">Guardar WhatsApp</button></div></section>
+    <div id="admin-retry" class="notice hidden" role="alert">No se pudo cargar el panel. <button id="retry-load" type="button" class="btn secondary">Reintentar conexión</button></div>
     <div class="toolbar"><button id="new-product" class="btn gold">+ Nuevo producto</button><input id="search" placeholder="Buscar producto o SKU"><select id="filter"><option value="all">Todos</option><option value="active">Activos</option><option value="inactive">Inactivos</option><option value="low">Stock bajo</option></select></div>
     <section id="products" class="products"></section>
   </main>
@@ -83,7 +84,7 @@ const SUPABASE_PUBLISHABLE_KEY='sb_publishable_DzvTmxOxVWY4LaKNqx2-xA_4RVK2TtS';
 const BUCKET='product-images';
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const $=id=>document.getElementById(id);
-let products=[],categories=[],editing=null,toastTimer;
+let products=[],categories=[],editing=null,toastTimer,saving=false;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const money=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(Number(v)||0);
 const slugify=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,100);
@@ -91,9 +92,33 @@ function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');
 function syncDiscountFromPercent(){const normal=Number($('price').value),pct=Number($('discount-percent').value);if(!$('discount-percent').value){$('discount-help').textContent='Opcional · se calcula automáticamente.';return}if(!Number.isFinite(normal)||normal<=0){$('discount-help').textContent='Ingresa primero el precio normal.';return}if(!Number.isFinite(pct)||pct<0||pct>100){$('discount-help').textContent='El descuento debe estar entre 0% y 100%.';return}const sale=Math.round(normal*(1-pct/100));$('sale-price').value=sale;$('discount-help').textContent=`Precio oferta: ${money(sale)} · Ahorras ${money(normal-sale)}`}
 function syncDiscountFromPrice(){const normal=Number($('price').value),raw=$('sale-price').value,sale=Number(raw);if(!raw||!Number.isFinite(normal)||normal<=0||!Number.isFinite(sale)||sale<0||sale>normal){if(!raw)$('discount-percent').value='';return}const pct=Math.round((1-sale/normal)*100);$('discount-percent').value=pct;$('discount-help').textContent=pct>0?`Descuento aplicado: ${pct}% · Ahorras ${money(normal-sale)}`:'Sin descuento aplicado.'}
 function adminRole(user){return user?.app_metadata?.role==='admin'}
-async function ensureAdmin(){const {data:{session}}=await db.auth.getSession();if(!session){showLogin();return false}const {data:{user},error}=await db.auth.getUser();if(error||!adminRole(user)){await db.auth.signOut();showLogin('Esta cuenta no tiene permisos de administrador.');return false}$('admin-email').textContent=user.email||'Administrador';$('login-view').classList.add('hidden');$('app-view').classList.remove('hidden');await loadAll();return true}
+async function requireMfa(){const {data,error}=await db.auth.mfa.getAuthenticatorAssuranceLevel();if(error)throw error;if(data?.currentLevel!=='aal2')throw new Error('Confirma el segundo factor de seguridad antes de modificar productos.')}
+async function ensureAdmin(){
+ const {data:{session},error:sessionError}=await db.auth.getSession();
+ if(sessionError)throw sessionError;
+ if(!session){showLogin();return false}
+ const {data:{user},error}=await db.auth.getUser();
+ if(error||!adminRole(user)){await db.auth.signOut();showLogin('Esta cuenta no tiene permisos de administrador.');return false}
+ const {data:aal,error:aalError}=await db.auth.mfa.getAuthenticatorAssuranceLevel();
+ if(aalError)throw aalError;
+ if(aal?.currentLevel!=='aal2'){$('login-view').classList.add('hidden');$('app-view').classList.add('hidden');return false}
+ $('admin-email').textContent=user.email||'Administrador';
+ $('login-view').classList.add('hidden');$('app-view').classList.remove('hidden');
+ await loadAll();return true
+}
 function showLogin(msg=''){$('app-view').classList.add('hidden');$('login-view').classList.remove('hidden');$('login-error').classList.toggle('hidden',!msg);$('login-error').textContent=msg}
-async function loadAll(){const [pc,cc,sc]=await Promise.all([db.from('products').select('id,category_id,sku,slug,name,description,price_clp,sale_price_clp,stock,low_stock_threshold,is_active,is_featured,material,color,product_images(id,image_url,sort_order,is_primary)').order('created_at',{ascending:false}),db.from('categories').select('id,name,is_active,sort_order').order('sort_order'),db.from('store_settings').select('whatsapp_number').eq('id',1).single()]);if(pc.error)throw pc.error;if(cc.error)throw cc.error;if(sc.error)throw sc.error;products=pc.data||[];categories=cc.data||[];$('whatsapp-number').value=sc.data?.whatsapp_number||'';renderCategories();renderProducts()}
+async function loadAll(){
+ try{
+  const [pc,cc,sc]=await Promise.all([
+   db.from('products').select('id,category_id,sku,slug,name,description,price_clp,sale_price_clp,stock,low_stock_threshold,is_active,is_featured,material,color,product_images(id,image_url,sort_order,is_primary)').order('created_at',{ascending:false}),
+   db.from('categories').select('id,name,is_active,sort_order').order('sort_order'),
+   db.from('store_settings').select('whatsapp_number').eq('id',1).single()
+  ]);
+  if(pc.error)throw pc.error;if(cc.error)throw cc.error;if(sc.error)throw sc.error;
+  products=pc.data||[];categories=cc.data||[];$('whatsapp-number').value=sc.data?.whatsapp_number||'';
+  $('admin-retry').classList.add('hidden');renderCategories();renderProducts();
+ }catch(error){console.error('Cargar panel',error);$('admin-retry').classList.remove('hidden');toast('Error al cargar datos. Presiona Reintentar.');throw error}
+}
 function renderCategories(){$('category').innerHTML='<option value="">Sin categoría</option>'+categories.filter(c=>c.is_active).map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}
 function filtered(){const q=$('search').value.toLowerCase().trim(),f=$('filter').value;return products.filter(p=>{const text=`${p.name} ${p.sku}`.toLowerCase();const low=(p.stock??0)<=(p.low_stock_threshold??3);return(!q||text.includes(q))&&(f==='all'||(f==='active'&&p.is_active)||(f==='inactive'&&!p.is_active)||(f==='low'&&low))})}
 function primaryImage(p){const imgs=[...(p.product_images||[])].sort((a,b)=>(Number(b.is_primary)-Number(a.is_primary))||((a.sort_order||0)-(b.sort_order||0)));return imgs[0]?.image_url||'cartera1234.png'}
@@ -101,16 +126,109 @@ function renderProducts(){const list=filtered();$('stat-products').textContent=p
 function openEditor(p=null){editing=p;$('editor-title').textContent=p?'Editar producto':'Nuevo producto';$('product-id').value=p?.id||'';$('name').value=p?.name||'';$('sku').value=p?.sku||'';$('category').value=p?.category_id||'';$('stock').value=p?.stock??0;$('price').value=p?.price_clp??'';$('sale-price').value=p?.sale_price_clp??'';$('discount-percent').value=(p?.sale_price_clp!=null&&Number(p.price_clp)>0)?Math.round((1-Number(p.sale_price_clp)/Number(p.price_clp))*100):'';$('material').value=p?.material||'';$('color').value=p?.color||'';$('description').value=p?.description||'';$('is-active').checked=p?.is_active??true;$('is-featured').checked=p?.is_featured??false;$('low-threshold').value=p?.low_stock_threshold??3;$('images').value='';$('discount-help').textContent=$('discount-percent').value?`Descuento aplicado: ${$('discount-percent').value}%`:'Opcional · se calcula automáticamente.';renderImages(p);$('stock-adjustment').classList.toggle('hidden',!p);$('editor').classList.remove('hidden')}
 function closeEditor(){$('editor').classList.add('hidden');editing=null}
 function renderImages(p){const imgs=[...(p?.product_images||[])].sort((a,b)=>(Number(b.is_primary)-Number(a.is_primary))||((a.sort_order||0)-(b.sort_order||0)));$('existing-images').innerHTML=imgs.map(img=>`<div class="img-card"><img src="${esc(img.image_url)}" alt=""><div class="img-actions">${img.is_primary?'<span class="pill ok">Principal</span>':`<button type="button" class="btn secondary small" data-primary="${esc(img.id)}">Hacer principal</button>`}<button type="button" class="btn danger small" data-delete-image="${esc(img.id)}">Eliminar imagen</button></div></div>`).join('')}
-function storagePathFromUrl(url){const marker=`/storage/v1/object/public/${BUCKET}/`;const i=String(url).indexOf(marker);return i>=0?decodeURIComponent(String(url).slice(i+marker.length)):null}
-async function saveProduct(e){e.preventDefault();const name=$('name').value.trim(),sku=$('sku').value.trim();const price=Number($('price').value),sale=$('sale-price').value===''?null:Number($('sale-price').value);if(!name||!sku||!Number.isFinite(price)||price<0)return toast('Revisa nombre, SKU y precio.');if(sale!=null&&(sale<0||sale>price))return toast('El precio oferta debe ser menor o igual al normal.');const payload={name,sku,slug:slugify(name)+'-'+slugify(sku),category_id:$('category').value||null,description:$('description').value.trim()||null,price_clp:Math.round(price),sale_price_clp:sale==null?null:Math.round(sale),low_stock_threshold:Math.max(0,Math.round(Number($('low-threshold').value)||0)),is_active:$('is-active').checked,is_featured:$('is-featured').checked,material:$('material').value.trim()||null,color:$('color').value.trim()||null,updated_at:new Date().toISOString()};$('save-product').disabled=true;try{let id=editing?.id;if(id){const {error}=await db.from('products').update(payload).eq('id',id);if(error)throw error}else{const {data,error}=await db.from('products').insert(payload).select('id').single();if(error)throw error;id=data.id}const files=[...$('images').files];if(files.length)await uploadImages(id,files);toast('Producto guardado.');closeEditor();await loadAll()}catch(err){console.error(err);toast(err.message||'No se pudo guardar.')}finally{$('save-product').disabled=false}}
-async function uploadImages(productId,files){const current=products.find(p=>p.id===productId)?.product_images||[];let order=current.length;for(const file of files){if(file.size>10*1024*1024)throw new Error(`${file.name}: supera 10 MB`);if(!['image/jpeg','image/png','image/webp','image/avif'].includes(file.type))throw new Error(`${file.name}: formato no permitido`);const ext=(file.name.split('.').pop()||'jpg').toLowerCase();const path=`${productId}/${crypto.randomUUID()}.${ext}`;const {error:upErr}=await db.storage.from(BUCKET).upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});if(upErr)throw upErr;const {data:urlData}=db.storage.from(BUCKET).getPublicUrl(path);const {error:rowErr}=await db.from('product_images').insert({product_id:productId,image_url:urlData.publicUrl,sort_order:order,is_primary:current.length===0&&order===0,alt_text:$('name').value.trim()});if(rowErr){await db.storage.from(BUCKET).remove([path]);throw rowErr}order++}}
-async function setPrimary(imageId){if(!editing)return;try{const {error:e1}=await db.from('product_images').update({is_primary:false}).eq('product_id',editing.id);if(e1)throw e1;const {error:e2}=await db.from('product_images').update({is_primary:true}).eq('id',imageId);if(e2)throw e2;await loadAll();editing=products.find(p=>p.id===editing.id);renderImages(editing);toast('Imagen principal actualizada.')}catch(err){console.error(err);toast('No se pudo cambiar la imagen principal.')}}
-async function deleteImage(imageId){if(!editing)return;const img=(editing.product_images||[]).find(x=>x.id===imageId);if(!img||!confirm('¿Eliminar esta imagen?'))return;try{const path=storagePathFromUrl(img.image_url);const {error}=await db.from('product_images').delete().eq('id',imageId);if(error)throw error;if(path){const {error:se}=await db.storage.from(BUCKET).remove([path]);if(se)console.warn(se)}await loadAll();editing=products.find(p=>p.id===editing.id);if(editing&&editing.product_images?.length&&!editing.product_images.some(x=>x.is_primary)){const first=[...editing.product_images].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))[0];await db.from('product_images').update({is_primary:true}).eq('id',first.id);await loadAll();editing=products.find(p=>p.id===editing.id)}renderImages(editing);toast('Imagen eliminada.')}catch(err){console.error(err);toast('No se pudo eliminar la imagen.')}}
-async function toggleProduct(id){const p=products.find(x=>x.id===id);if(!p)return;const {error}=await db.from('products').update({is_active:!p.is_active,updated_at:new Date().toISOString()}).eq('id',id);if(error)return toast('No se pudo actualizar.');await loadAll();toast(p.is_active?'Producto ocultado.':'Producto activado.')}
+function storagePathFromUrl(url){
+ try{
+  const parsed=new URL(url);const origin=new URL(SUPABASE_URL);
+  const prefix='/storage/v1/object/public/'+BUCKET+'/';
+  if(parsed.origin!==origin.origin||!parsed.pathname.startsWith(prefix))return null;
+  const path=decodeURIComponent(parsed.pathname.slice(prefix.length));
+  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|jpeg|png|webp|avif)$/i.test(path)?path:null;
+ }catch{return null}
+}
+
+function validateImageFiles(files){
+ for(const file of files){
+  if(file.size<=0||file.size>10*1024*1024)throw new Error(file.name+': el tamaño debe estar entre 1 byte y 10 MB.');
+  if(!['image/jpeg','image/png','image/webp','image/avif'].includes(file.type))throw new Error(file.name+': formato no permitido.');
+ }
+}
+async function rollbackUploadedImages(productId,created){
+ for(const record of created.slice().reverse()){
+  if(record.id){const {error}=await db.from('product_images').delete().eq('id',record.id).eq('product_id',productId);if(error)console.error('Limpieza de foto incompleta',error)}
+  const {error}=await db.storage.from(BUCKET).remove([record.path]);if(error)console.error('Limpieza de archivo incompleta',error);
+ }
+}
+async function uploadImages(productId,files){
+ const current=products.find(p=>p.id===productId)?.product_images||[];
+ const created=[];
+ let order=current.length;
+ try{
+  for(const file of files){
+   const ext=({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif'})[file.type];
+   const path=productId+'/'+crypto.randomUUID()+'.'+ext;
+   const {error:upErr}=await db.storage.from(BUCKET).upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});
+   if(upErr)throw upErr;
+   const record={path,id:null};created.push(record);
+   const {data:urlData}=db.storage.from(BUCKET).getPublicUrl(path);
+   const {data:row,error:rowErr}=await db.from('product_images').insert({product_id:productId,image_url:urlData.publicUrl,sort_order:order,is_primary:false,alt_text:$('name').value.trim()}).select('id').single();
+   if(rowErr)throw rowErr;
+   record.id=row.id;order++;
+  }
+  if(!current.length&&created.length){
+   const {error:primaryError}=await db.rpc('set_product_primary_image',{p_product_id:productId,p_image_id:created[0].id});
+   if(primaryError)throw primaryError;
+  }
+  return created;
+ }catch(error){
+  await rollbackUploadedImages(productId,created);
+  throw error;
+ }
+}
+async function saveProduct(e){
+ e.preventDefault();
+ if(saving)return;
+ const name=$('name').value.trim(),sku=$('sku').value.trim();
+ const rawPrice=$('price').value,rawSale=$('sale-price').value;
+ const price=Number(rawPrice),sale=rawSale===''?null:Number(rawSale);
+ const files=[...$('images').files];
+ try{
+  if(!name||!sku||rawPrice===''||!Number.isSafeInteger(price)||price<0||price>999999999)throw new Error('Nombre, código y precio entero válido son obligatorios.');
+  if(sale!==null&&(!Number.isSafeInteger(sale)||sale<0||sale>price))throw new Error('El precio de oferta debe ser un entero entre cero y el precio normal.');
+  validateImageFiles(files);await requireMfa();
+  const threshold=Math.max(0,Math.min(1000000,Math.round(Number($('low-threshold').value)||0)));
+  const payload={name,sku,slug:slugify(name)+'-'+slugify(sku),category_id:$('category').value||null,description:$('description').value.trim()||null,price_clp:price,sale_price_clp:sale,low_stock_threshold:threshold,is_active:$('is-active').checked,is_featured:$('is-featured').checked,material:$('material').value.trim()||null,color:$('color').value.trim()||null,updated_at:new Date().toISOString()};
+  saving=true;$('save-product').disabled=true;
+  let productId=editing?.id||null,createdNew=false,metadataUpdated=false,createdImages=[];
+  try{
+   if(!productId){
+    const {data,error}=await db.from('products').insert({...payload,is_active:false}).select('id').single();
+    if(error)throw error;
+    productId=data.id;createdNew=true;
+   }
+   if(files.length)createdImages=await uploadImages(productId,files);
+   const {error}=await db.from('products').update(payload).eq('id',productId);
+   if(error)throw error;
+   metadataUpdated=true;
+   await loadAll();
+   closeEditor();
+   toast('Producto guardado correctamente.');
+  }catch(error){
+   console.error('Guardar producto',error);
+   if(!metadataUpdated&&createdImages.length)await rollbackUploadedImages(productId,createdImages);
+   try{await loadAll()}catch(_){}
+   if(createdNew)toast('No se completó la publicación. El producto nuevo permanece como borrador inactivo.');
+   else if(metadataUpdated)toast('Producto guardado, pero hubo un error al recargar el listado.');
+   else toast('No se completó el guardado. Revisa los datos y vuelve a intentar.');
+  }finally{saving=false;$('save-product').disabled=false}
+ }catch(error){console.warn('Validación del producto',error);toast(error.message||'Revisa los datos del producto')}
+}
+async function setPrimary(imageId){
+ if(!editing||!editing.product_images?.some(img=>img.id===imageId))return toast('Selecciona una imagen de este producto.');
+ try{
+  await requireMfa();
+  const productId=editing.id;
+  const {error}=await db.rpc('set_product_primary_image',{p_product_id:productId,p_image_id:imageId});
+  if(error)throw error;
+  await loadAll();editing=products.find(p=>p.id===productId)||null;renderImages(editing);
+  toast('Fotografía principal actualizada.');
+ }catch(err){console.error('Imagen principal',err);toast('No se pudo cambiar la imagen principal: '+(err.message||'error'))}
+}
+async function deleteImage(imageId){if(!editing)return;const img=(editing.product_images||[]).find(x=>x.id===imageId);if(!img||!confirm('¿Eliminar esta imagen?'))return;try{await requireMfa();const path=storagePathFromUrl(img.image_url);const {error}=await db.from('product_images').delete().eq('id',imageId).eq('product_id',editing.id);if(error)throw error;if(path){const {error:se}=await db.storage.from(BUCKET).remove([path]);if(se)console.warn(se)}await loadAll();editing=products.find(p=>p.id===editing.id);if(editing&&editing.product_images?.length&&!editing.product_images.some(x=>x.is_primary)){const first=[...editing.product_images].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))[0];const {error:prErr}=await db.rpc('set_product_primary_image',{p_product_id:editing.id,p_image_id:first.id});if(prErr)throw prErr;await loadAll();editing=products.find(p=>p.id===editing.id)}renderImages(editing);toast('Imagen eliminada.')}catch(err){console.error(err);toast('No se pudo eliminar la imagen.')}}
+async function toggleProduct(id){const p=products.find(x=>x.id===id);if(!p)return;try{await requireMfa();const {error}=await db.from('products').update({is_active:!p.is_active,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;await loadAll();toast(p.is_active?'Producto ocultado.':'Producto activado.')}catch(err){console.error('Estado de producto',err);toast(err.message||'No se pudo actualizar el producto.')}}
 async function adjustStock(){const product=editing;if(!product?.id)return toast('Guarda el producto antes de cargar existencias.');const raw=$('stock-quantity').value,quantity=Number(raw);if(!/^[0-9]+$/.test(raw)||!Number.isSafeInteger(quantity)||quantity<1||quantity>10000)return toast('Ingresa una cantidad entera entre 1 y 10.000.');const movement_type=$('stock-operation').value;if(!['entry','unavailable'].includes(movement_type))return toast('Operación inválida.');if(movement_type==='unavailable'&&quantity>Number(product.stock||0))return toast('No puedes descontar más unidades que las existentes.');const button=$('apply-stock');button.disabled=true;try{const {data:aal,error:aalError}=await db.auth.mfa.getAuthenticatorAssuranceLevel();if(aalError)throw aalError;if(aal?.currentLevel!=='aal2')throw new Error('Verifica tu segundo factor antes de modificar el stock.');const {error}=await db.from('inventory_movements').insert({product_id:product.id,movement_type,quantity_delta:movement_type==='entry'?quantity:-quantity,note:'Ajuste manual desde editor TIMELESS'});if(error)throw error;await loadAll();editing=products.find(p=>p.id===product.id)||null;if(editing){$('stock').value=editing.stock??0;$('stock-quantity').value='1';renderImages(editing)}toast('Stock actualizado.')}catch(error){console.error('Stock',error);toast(error.message||'No se pudo modificar el stock.')}finally{button.disabled=false}}
-async function saveWhatsapp(){const number=String($('whatsapp-number').value||'').replace(/\D/g,'');if(!/^\d{8,15}$/.test(number))return toast('Ingresa un número válido con código de país.');$('save-whatsapp').disabled=true;try{const {error}=await db.from('store_settings').update({whatsapp_number:number,updated_at:new Date().toISOString()}).eq('id',1);if(error)throw error;$('whatsapp-number').value=number;toast('WhatsApp actualizado.')}catch(err){console.error(err);toast(err.message||'No se pudo actualizar WhatsApp.')}finally{$('save-whatsapp').disabled=false}}
+async function saveWhatsapp(){const number=String($('whatsapp-number').value||'').replace(/\D/g,'');if(!/^\d{8,15}$/.test(number))return toast('Ingresa un número válido con código de país.');$('save-whatsapp').disabled=true;try{await requireMfa();const {error}=await db.from('store_settings').update({whatsapp_number:number,updated_at:new Date().toISOString()}).eq('id',1);if(error)throw error;$('whatsapp-number').value=number;toast('WhatsApp actualizado.')}catch(err){console.error(err);toast(err.message||'No se pudo actualizar WhatsApp.')}finally{$('save-whatsapp').disabled=false}}
 $('login-form').addEventListener('submit',async e=>{e.preventDefault();$('login-error').classList.add('hidden');const {error}=await db.auth.signInWithPassword({email:$('login-email').value.trim(),password:$('login-password').value});if(error)return showLogin('Email o contraseña incorrectos.');await ensureAdmin()});
-$('logout').addEventListener('click',async()=>{await db.auth.signOut();showLogin()});$('save-whatsapp').addEventListener('click',saveWhatsapp);$('apply-stock').addEventListener('click',adjustStock);$('new-product').addEventListener('click',()=>openEditor());$('close-editor').addEventListener('click',closeEditor);$('cancel-editor').addEventListener('click',closeEditor);$('product-form').addEventListener('submit',saveProduct);$('search').addEventListener('input',renderProducts);$('filter').addEventListener('change',renderProducts);$('discount-percent').addEventListener('input',syncDiscountFromPercent);$('sale-price').addEventListener('input',syncDiscountFromPrice);$('price').addEventListener('input',()=>{if($('discount-percent').value)syncDiscountFromPercent();else syncDiscountFromPrice()});
+$('logout').addEventListener('click',async()=>{await db.auth.signOut();showLogin()});$('save-whatsapp').addEventListener('click',saveWhatsapp);$('retry-load').addEventListener('click',()=>loadAll().catch(()=>{}));$('apply-stock').addEventListener('click',adjustStock);$('new-product').addEventListener('click',()=>openEditor());$('close-editor').addEventListener('click',closeEditor);$('cancel-editor').addEventListener('click',closeEditor);$('product-form').addEventListener('submit',saveProduct);$('search').addEventListener('input',renderProducts);$('filter').addEventListener('change',renderProducts);$('discount-percent').addEventListener('input',syncDiscountFromPercent);$('sale-price').addEventListener('input',syncDiscountFromPrice);$('price').addEventListener('input',()=>{if($('discount-percent').value)syncDiscountFromPercent();else syncDiscountFromPrice()});
 document.addEventListener('click',e=>{const edit=e.target.closest('[data-edit]');if(edit)return openEditor(products.find(p=>p.id===edit.dataset.edit));const tog=e.target.closest('[data-toggle]');if(tog)return toggleProduct(tog.dataset.toggle);const pri=e.target.closest('[data-primary]');if(pri)return setPrimary(pri.dataset.primary);const del=e.target.closest('[data-delete-image]');if(del)return deleteImage(del.dataset.deleteImage)});
 $('editor').addEventListener('click',e=>{if(e.target===$('editor'))closeEditor()});
 ensureAdmin().catch(err=>{console.error(err);showLogin('No se pudo conectar con Supabase.')});
