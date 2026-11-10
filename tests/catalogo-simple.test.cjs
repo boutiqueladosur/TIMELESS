@@ -144,3 +144,17 @@ test('Catalog has a retry action for Supabase failures',()=>{
   assert.match(catalog,/id="retry-catalog"/);
   assert.match(catalog,/loadCatalog\(\);return/);
 });
+
+test('Selected image preview is available before saving and object URLs are released',()=>{
+ assert.match(admin,/id="pending-images"/);
+ assert.match(admin,/function previewSelectedImages\(/);
+ assert.match(admin,/URL\.createObjectURL\(file\)/);
+ assert.match(admin,/URL\.revokeObjectURL\(url\)/);
+ assert.match(admin,/function closeEditor\(\)\{clearPendingImagePreviews\(\)/);
+});
+test('Only one module manages idle activity timestamps',()=>{
+ const sec=readFileSync('security-admin.js','utf8');
+ const idle=readFileSync('session-idle.js','utf8');
+ assert.doesNotMatch(sec,/markActivity|initIdleProtection|scheduleIdle|timeless_admin_last_activity/);
+ assert.match(idle,/if\(last&&expired\(last\)\)\{logout\(\);return\}/);
+});
