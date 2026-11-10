@@ -1,26 +1,24 @@
-# TIMELESS — Panel privado de catálogo y WhatsApp
+# TIMELESS TCO — tienda pública + panel administrativo
 
-TIMELESS funciona exclusivamente como panel de administración conectado a Supabase.
-La ruta principal `index.html` redirige al panel `admin.html`. La tienda pública fue retirada.
+## Tienda para clientes
+- `index.html` muestra la colección de carteras y accesorios con búsqueda, filtros, ofertas y fotografías.
+- Carrito con varios artículos, control de cantidad y subtotal según precios publicados.
+- El cliente envía el pedido por WhatsApp para acordar disponibilidad, despacho y pago.
+- **No existe pago en línea automatizado ni se confirma el pedido/reserva inventario al enviar el mensaje.**
+- El catálogo y el número de WhatsApp se leen desde Supabase con permisos mínimos de solo lectura para visitantes.
+- `privacidad.html` explica el tratamiento de información y el flujo de compra asistida.
 
-## Funciones disponibles
-- Inicio de sesión con correo, contraseña, rol `admin` y segundo factor TOTP (MFA).
-- Editar el número de WhatsApp de contacto.
-- Crear y editar productos, precios, descuentos, descripciones y categorías asignadas.
-- Subir, eliminar y definir la imagen principal de productos.
-- Activar u ocultar productos sin eliminarlos.
-- Ajustar stock mediante movimientos auditables.
-- Cierre de sesión y cierre por inactividad.
+## Panel privado
+- `admin.html` requiere correo, contraseña, rol administrador y MFA TOTP.
+- Permite crear/editar productos, gestionar fotografías, ofertas, precios, publicación, existencias y número de WhatsApp.
+- Cierre por inactividad en `security-admin.js`.
+- Los permisos en Postgres se controlan con RLS y permisos de columnas; no se publica la llave secreta de servicio.
 
-## Seguridad y alcance
-- El navegador utiliza únicamente la clave `sb_publishable` de Supabase; no debe incorporar claves secretas ni de servicio.
-- El servidor PostgreSQL valida autorización y MFA mediante políticas RLS restrictivas.
-- Las funciones comerciales de pedidos/checkout y el catálogo público no forman parte de esta interfaz.
-- Los datos históricos de pedidos y pagos permanecen en la base de datos para conservación; sus permisos de API de usuario final están revocados.
-- El almacenamiento `product-images` contiene imágenes comerciales del catálogo.
+## Sitios
+- Tienda: https://boutiqueladosur.github.io/TIMELESS/
+- Administración: https://boutiqueladosur.github.io/TIMELESS/admin.html
 
-## Acceso
-- [Panel TIMELESS](https://boutiqueladosur.github.io/TIMELESS/admin.html)
-- [Entrada principal](https://boutiqueladosur.github.io/TIMELESS/)
-
-No introducir contraseñas, códigos TOTP ni claves `service_role` en el repositorio.
+## Pruebas y límites
+Las consultas públicas y administrativas deben auditarse al cambiar las políticas RLS.
+El flujo final en WhatsApp requiere intervención de TIMELESS para confirmar el pedido y el pago.
+Antes de ofrecer pagos automáticos, se debe integrar una pasarela oficial con validaciones del lado servidor.
