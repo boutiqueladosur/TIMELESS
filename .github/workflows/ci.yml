@@ -17,6 +17,8 @@ jobs:
           for f in *.js; do [ -f "$f" ] && node --check "$f"; done
       - name: Catalog regression tests
         run: node --test tests/*.test.cjs
+      - name: Live public catalog smoke (read-only)
+        run: node tests/live-readonly-smoke.js
       - name: Validate required files
         run: |
           test -f index.html
