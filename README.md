@@ -22,3 +22,11 @@
 Las consultas públicas y administrativas deben auditarse al cambiar las políticas RLS.
 El flujo final en WhatsApp requiere intervención de TIMELESS para confirmar el pedido y el pago.
 Antes de ofrecer pagos automáticos, se debe integrar una pasarela oficial con validaciones del lado servidor.
+
+## Documentación legal · revisión 12-11-2026
+- Política de privacidad: `privacidad.html` (Ley 19.628; adaptación a Ley 21.719 desde 01-12-2026).
+- Términos de compra: `terminos.html` (Ley 19.496, Decreto 6, derechos del consumidor).
+- Referencias legales desde la tienda: pie de página, información de compra y carrito.
+- **Antes de comenzar ventas reales es obligatorio completar la identificación veraz del proveedor:** razón social o nombre completo del titular, RUT, domicilio legal, correo comercial/de privacidad y representante legal cuando corresponda.
+- Confirmar y documentar operativamente: política de atención a derechos ARCO/portabilidad, plazos de conservación, encargados y transferencias internacionales, notificaciones de incidentes, información de despacho y confirmación escrita de compras.
+- La actualización textual no sustituye la revisión jurídica profesional ni el cumplimiento técnico y organizativo.
