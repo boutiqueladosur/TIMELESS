@@ -311,3 +311,38 @@ body.cart-open{overflow:hidden}
   .toolbar .search{width:100%;flex:0 0 auto;max-width:none}
   .toolbar .sort-wrap{justify-content:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:9px;gap:10px}
 }
+
+/* TIMELESS · banda informativa única para atención por WhatsApp */
+.benefits-inner{
+  justify-content:center;
+  align-items:center;
+  max-width:1200px;
+  padding:17px 22px;
+}
+.benefits-inner .benefit{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  column-gap:12px;
+  row-gap:3px;
+  text-align:center;
+  text-transform:none;
+  letter-spacing:.02em;
+  line-height:1.65;
+  font-size:12px;
+}
+.benefits-inner .benefit strong{
+  color:#342419;
+  font-weight:700;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  font-size:11px;
+}
+.benefits-inner .benefit span{color:#665749}
+@media(max-width:640px){
+  .benefits-inner{display:flex;padding:15px 18px}
+  .benefits-inner .benefit{margin:0;font-size:11px;gap:5px}
+  .benefits-inner .benefit strong{font-size:10px;letter-spacing:.05em}
+  .benefits-inner .benefit::before{display:none}
+}
