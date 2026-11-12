@@ -15,8 +15,8 @@
 - Los permisos en Postgres se controlan con RLS y permisos de columnas; no se publica la llave secreta de servicio.
 
 ## Sitios
-- Tienda: https://boutiqueladosur.github.io/TIMELESS/
-- Administración: https://boutiqueladosur.github.io/TIMELESS/admin.html
+- Tienda: https://www.timelesstco.cl/
+- Administración: https://www.timelesstco.cl/admin.html
 
 ## Pruebas y límites
 Las consultas públicas y administrativas deben auditarse al cambiar las políticas RLS.
