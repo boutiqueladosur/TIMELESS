@@ -110,7 +110,7 @@ function showLogin(msg=''){$('app-view').classList.add('hidden');$('login-view')
 async function loadAll(){
  try{
   const [pc,cc,sc]=await Promise.all([
-   db.from('products').select('id,category_id,sku,slug,name,description,price_clp,sale_price_clp,stock,low_stock_threshold,is_active,is_featured,material,color,product_images(id,image_url,sort_order,is_primary)').order('created_at',{ascending:false}),
+   db.from('products').select('id,category_id,sku,slug,name,description,price_clp,sale_price_clp,stock,low_stock_threshold,is_active,is_featured,material,color,product_images(id,image_url,sort_order,is_primary)').is('archived_at',null).order('created_at',{ascending:false}),
    db.from('categories').select('id,name,is_active,sort_order').order('sort_order'),
    db.from('store_settings').select('whatsapp_number').eq('id',1).single()
   ]);
