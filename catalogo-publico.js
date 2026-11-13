@@ -11,7 +11,7 @@ const category=p=>p.categories?.name||'Colección';
 function photos(p){
   const rows=[...(p.product_images||[])].sort((a,b)=>Number(b.is_primary)-Number(a.is_primary)||(Number(a.sort_order)||0)-(Number(b.sort_order)||0));
   const urls=rows.map(r=>{try{const u=new URL(r.image_url,location.href);return u.protocol==='https:'?u.href:''}catch{return''}}).filter(Boolean);
-  return urls.length?[...new Set(urls)]:['cartera1234.png'];
+  return urls.length?[...new Set(urls)]:['assets/timeless-mariposa.svg'];
 }
 function messageLink(p){
   const lines=['Hola TIMELESS, quisiera consultar por esta cartera:',p.name,'Código: '+(p.sku||'Sin código'),'Precio publicado: '+(itemPrice(p)>0?money(itemPrice(p)):'A consultar'),'Enlace: '+productLink(p),'¿Está disponible? ¿Cuánto cuesta el despacho a mi comuna y qué formas de pago aceptan?'];
@@ -49,13 +49,13 @@ function render(){
     const thumbs=list.length>1?'<div class="thumbs">'+list.map((url,i)=>'<button type="button" class="thumb '+(i===0?'active':'')+'" data-image="'+esc(url)+'" aria-label="Fotografía '+(i+1)+'"><img src="'+esc(url)+'" alt=""></button>').join('')+'</div>':'<div class="thumbs" aria-hidden="true"></div>';
     return '<article class="card '+(out?'stock-out':'')+'">'
       +'<div class="media">'+(out?'<span class="stock-label">Consultar stock</span>':(p.is_featured?'<span class="feature-label">Destacado</span>':''))
-      +'<img class="main-img" src="'+esc(list[0])+'" alt="'+esc(p.name)+'" loading="lazy">'
+      +'<img class="main-img" src="'+esc(list[0])+'" alt="'+esc(list[0]==='assets/timeless-mariposa.svg'?'Fotografía pendiente':p.name)+'" loading="lazy">'
       +(discount?'<span class="discount">-'+discount+'% oferta</span>':'')
       +'</div>'+thumbs
       +'<div class="body"><div class="category">'+esc(category(p))+'</div><h3>'+esc(p.name)+'</h3><div class="desc">'+esc(p.description||'Una pieza de nuestra colección TIMELESS.')+'</div>'
       +'<div class="price">'+(regular>price&&price>0?'<span class="old">'+money(regular)+'</span>':'')+'<span class="current">'+(price>0?money(price):'Consultar')+'</span></div>'
       +'<div class="actions">'+(out?'<a class="add" href="'+esc(messageLink(p))+'" target="_blank" rel="noopener noreferrer">Consultar disponibilidad</a>':'<button type="button" class="add" data-cart-add="'+esc(p.id)+'">Agregar al carrito</button>')
-      +'<button type="button" class="details" data-detail="'+esc(p.id)+'" aria-label="Ver fotografías y detalles de '+esc(p.name)+'">Ver fotos y detalles</button></div>'
+      +'<button type="button" class="details" data-detail="'+esc(p.id)+'" aria-label="Ver detalles de '+esc(p.name)+'">Ver detalles</button></div>'
       +'</div></article>';
   }).join('')||(loadingError?'<div class="loader catalog-error" style="grid-column:1/-1"><p>No pudimos conectar con el catálogo en este momento.</p><button type="button" class="details" id="retry-catalog">Volver a intentar</button></div>':'<div class="loader" style="grid-column:1/-1">No hay productos que coincidan.</div>');
 }
