@@ -23,7 +23,9 @@ jobs:
           test -f admin.html
           test -f catalogo-publico.js
           test -f security-admin.js
-          test -f session-idle.js
+          test -f catalogo-estilo.css
+          test -f privacidad.html
+          test -f terminos.html
           test ! -f checkout.js
       - name: Prevent server secrets in public frontend
         run: |
