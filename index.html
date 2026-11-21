@@ -30,6 +30,9 @@
 
 .story .story-logo{filter:none!important;mix-blend-mode:screen!important;background:transparent!important;object-fit:contain;}
 .story .story-identity{isolation:auto;}
+
+/* Premium introduction — approved storefront design */
+.hero .hero-cta-strip.premium-intro{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:19px;text-align:center;max-width:none;padding:34px 20px 36px;background:linear-gradient(180deg,#fffaf3,#fffdfb)}.premium-copy{max-width:780px}.premium-copy .eyebrow{display:block;letter-spacing:.15em;color:#94642e}.premium-copy .premium-butterfly{display:block;width:64px;height:28px;margin:10px auto 5px;color:#b68c48}.premium-copy h2{font:500 clamp(30px,4vw,48px)/1.12 Georgia,'Times New Roman',serif;color:#211912;letter-spacing:-.025em;margin:8px 0}.hero .premium-intro p{font-size:clamp(12px,1.15vw,15px);line-height:1.65;margin:8px 0 0;color:#78695b}.premium-intro .hero-cta{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:12px;margin:0}.premium-intro .hero-cta .btn-dark,.premium-intro .hero-cta .text-link{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:46px;padding:12px 22px;border-radius:8px;border:1px solid #211912;font-size:11px;font-weight:600;letter-spacing:.06em;text-decoration:none}.premium-intro .hero-cta .btn-dark{background:#211912;color:#fff}.premium-intro .hero-cta .text-link{border-color:#b68c48;color:#8e622d;background:transparent}.premium-intro .hero-cta .text-link:hover{background:#f1e5d5}.premium-intro .hero-cta svg{width:18px;height:18px;flex:none}.premium-benefits{background:#f4eadc;border-block:1px solid #e5d0b4}.premium-benefits .benefits-inner{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;max-width:1160px;padding:20px 22px}.premium-benefits .benefits-inner .benefit{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;margin:0;padding:8px 10px;letter-spacing:0;text-transform:none;min-width:0}.premium-benefits .benefit+.benefit{border-left:1px solid #dfc9ac}.premium-benefits .benefit::before{display:none}.premium-benefits .benefit svg{width:26px;height:26px;color:#a57b42}.premium-benefits .benefits-inner .benefit strong{font-size:12px;letter-spacing:.015em;color:#594531;font-weight:600}.premium-benefits .benefits-inner .benefit span{font-size:11px;line-height:1.5;color:#78695b}.catalog{padding-top:clamp(32px,4.2vw,58px)}.catalog-intro .premium-rule{display:block;margin:15px auto 10px;width:64px;height:1px;background:#c5a16a}.catalog-intro #catalog-premium-subtitle{max-width:620px;margin:0 auto;font-size:13px;line-height:1.6;color:#78695b;text-align:center}@media(max-width:640px){.hero .hero-cta-strip.premium-intro{padding:26px 16px 28px;gap:16px}.premium-intro .hero-cta .btn-dark,.premium-intro .hero-cta .text-link{font-size:10px;padding:12px 14px}.premium-benefits .benefits-inner{gap:3px;padding:12px 8px}.premium-benefits .benefits-inner .benefit{padding:5px 4px;gap:5px}.premium-benefits .benefits-inner .benefit strong{font-size:10px}.premium-benefits .benefits-inner .benefit span{font-size:10px}.premium-benefits .benefit svg{width:23px;height:23px}.catalog-intro #catalog-premium-subtitle{font-size:12px}}
 </style>
 </head>
 <body>
@@ -59,21 +62,12 @@
         <img class="hero-banner" src="assets/timeless-portada.svg?v=20261120-tco" width="2041" height="771" fetchpriority="high" alt="Timeless TCO — Carteras y accesorios para mujer. Portada blanca y beige con letras negras, carteras delineadas y ornamentos dorados.">
         
       </div>
-      <div class="hero-cta-strip">
-        <div><span class="eyebrow">TIMELESS TCO · Colección 2026</span><p>Descubre tu próxima cartera favorita, con detalles que expresan tu estilo.</p></div>
-        <div class="hero-cta"><a class="btn-dark" href="#coleccion">Explorar colección <span aria-hidden="true">↓</span></a><a class="text-link" id="whatsapp-link" href="https://wa.me/56935707722" target="_blank" rel="noopener noreferrer">Consultar por WhatsApp</a></div>
-      </div>
-      
+      <div class="hero-cta-strip premium-intro"><div class="premium-copy"><span class="eyebrow">TIMELESS TCO · Colección 2026</span><svg class="premium-butterfly" viewBox="0 0 100 42" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M49 23C34-4 4-5 10 11C13 23 24 26 41 24C9 30 25 55 48 26M51 23C66-4 96-5 90 11C87 23 76 26 59 24C91 30 75 55 52 26M50 38C45 29 47 21 50 17C53 21 55 29 50 38M49 17Q46 7 40 4M51 17Q54 7 60 4"/></svg><h2 id="hero-premium-title">Detalles que reflejan tu esencia.</h2><p>Descubre accesorios que complementan tu estilo en cada momento.</p></div><div class="hero-cta"><a class="btn-dark" href="#coleccion">Explorar colección <span aria-hidden="true">↓</span></a><a class="text-link" id="whatsapp-link" href="https://wa.me/56935707722" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.7a8.5 8.5 0 1 1 16.3-3.8Z"/><path d="M9 8c0 4 3 7 7 7"/></svg><span>Consultar por WhatsApp</span></a></div></div>
     </section>
-    <section class="benefits" aria-label="Cómo comprar en TIMELESS">
-      <div class="benefits-inner">
-        
-        <div class="benefit"><strong>Atención personalizada por WhatsApp</strong><span>Te ayudamos a elegir tu cartera, confirmar disponibilidad y coordinar despacho y medios de pago.</span></div>
-      </div>
-    </section>
+    <section class="benefits premium-benefits" aria-label="Cómo comprar en TIMELESS"><div class="benefits-inner"><div class="benefit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.7a8.5 8.5 0 1 1 16.3-3.8Z"/><path d="M9 8c0 4 3 7 7 7"/></svg><strong>Atención personalizada</strong><span>Te ayudamos a elegir tu cartera.</span></div><div class="benefit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h13v12H2zM15 9h4l3 4v4h-7"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg><strong>Despachos coordinados</strong><span>Confirma entrega y medios de pago.</span></div><div class="benefit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg><strong>Fotografías reales</strong><span>Explora los detalles de cada modelo.</span></div></div></section>
     <section class="catalog" id="coleccion" aria-labelledby="catalog-title">
       <div class="catalog-intro">
-        <div><span class="eyebrow">Nuestra selección</span><h2 id="catalog-title">Encuentra tu favorita.</h2></div>
+        <div><span class="eyebrow">Nuestra selección</span><h2 id="catalog-title">Encuentra tu favorita.</h2><span class="premium-rule" aria-hidden="true"></span><p id="catalog-premium-subtitle">Diseños para cada estilo, cada ocasión y cada mujer.</p></div>
         
       </div>
       <div class="toolbar">
@@ -156,6 +150,6 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
   <script src="catalogo-publico.js?v=20261120-fotos"></script>
-<script src="site-content.js?v=1"></script>
+<script src="site-content.js?v=2"></script>
 </body>
 </html>
