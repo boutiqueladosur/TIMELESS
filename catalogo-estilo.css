@@ -346,3 +346,39 @@ body.cart-open{overflow:hidden}
   .benefits-inner .benefit strong{font-size:10px;letter-spacing:.05em}
   .benefits-inner .benefit::before{display:none}
 }
+
+
+/* TIMELESS TCO - identidad, botones y galerías — 2026-11-20 */
+.brand-wordmark{font-size:clamp(26px,2.7vw,38px);letter-spacing:-.025em;white-space:nowrap}
+.nav-actions{gap:12px}
+.cart-trigger,.contact-mini{
+  min-height:46px;border-radius:999px;padding:0 19px;
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  font-family:Montserrat,Arial,sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:.015em;text-transform:none;
+  box-shadow:0 3px 14px rgba(44,33,22,.07);
+  transition:background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease
+}
+.cart-trigger{background:#211b17;color:#fff;border:1px solid #211b17}
+.cart-trigger:hover{background:#3a2b20;border-color:#3a2b20;transform:translateY(-1px);box-shadow:0 7px 17px rgba(33,27,23,.16)}
+.cart-trigger span{height:25px;min-width:25px;padding:0 5px;background:#faf4ed;color:#211b17;font-size:12px}
+.contact-mini{border:1px solid #bd945d;background:#fffaf4;color:#35291f}
+.contact-mini:hover{background:#f3e6d5;border-color:#a77c43;color:#241b14;transform:translateY(-1px);box-shadow:0 7px 17px rgba(86,58,31,.12)}
+.cart-trigger:focus-visible,.contact-mini:focus-visible{outline:3px solid #caa168;outline-offset:3px}
+.photo-meta{font-family:Montserrat,Arial,sans-serif;color:#82694d;font-size:10px;letter-spacing:.045em;margin:10px 0 0}
+.card .thumb{border-radius:7px;overflow:hidden}
+.card .thumb.active{border-color:#a87b42;box-shadow:0 0 0 1px #a87b42}
+.modal-thumbs button{border-radius:7px;overflow:hidden}
+@media(max-width:640px){
+ .brand-wordmark{font-size:clamp(20px,4.8vw,26px)}
+ .brand-symbol{width:30px;height:30px}
+ .cart-trigger{min-height:40px;padding:0 11px;font-size:11px}
+ .cart-trigger span{height:22px;min-width:22px;font-size:11px}
+ .contact-mini{min-height:40px;min-width:40px;padding:0 10px}
+ .contact-mini .label{display:none}
+ .nav-actions{gap:7px}
+}
+@media(prefers-reduced-motion:reduce){
+ .cart-trigger,.contact-mini{transition:none}
+ .cart-trigger:hover,.contact-mini:hover{transform:none}
+}
