@@ -393,3 +393,23 @@ body.cart-open{overflow:hidden}
   .card .actions{grid-template-columns:minmax(0,1fr) auto}
   .card .thumbs{display:flex}
 }
+
+
+/* TIMELESS TCO · ajuste final de catálogo móvil (21-11-2026) */
+@media screen and (max-width: 640px){
+  #coleccion #grid,
+  #grid.grid{
+    display:grid;
+    grid-template-columns:minmax(0,1fr)!important;
+    justify-items:stretch;
+    width:100%;
+    max-width:520px;
+    margin-inline:auto;
+    gap:32px;
+  }
+  #grid > .card{width:100%;min-width:0;max-width:100%}
+  #grid .media{aspect-ratio:4/5}
+  #grid .media img{display:block;max-width:100%}
+  #grid .card .details{display:flex}
+  #grid .card .thumbs{display:flex}
+}
