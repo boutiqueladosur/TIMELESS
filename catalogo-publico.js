@@ -22,7 +22,7 @@ function photos(p){
   return urls.length?[...new Set(urls)]:['assets/timeless-mariposa.svg'];
 }
 function messageLink(p){
-  const lines=['Hola TIMELESS, quisiera consultar por esta cartera:',p.name,'Código: '+(p.sku||'Sin código'),'Precio publicado: '+(itemPrice(p)>0?money(itemPrice(p)):'A consultar'),'Enlace: '+productLink(p),'¿Está disponible? ¿Cuánto cuesta el despacho a mi comuna y qué formas de pago aceptan?'];
+  const lines=['Hola Timeless TCO, quisiera consultar por esta cartera:',p.name,'Código: '+(p.sku||'Sin código'),'Precio publicado: '+(itemPrice(p)>0?money(itemPrice(p)):'A consultar'),'Enlace: '+productLink(p),'¿Está disponible? ¿Cuánto cuesta el despacho a mi comuna y qué formas de pago aceptan?'];
   return 'https://wa.me/'+whatsapp+'?text='+encodeURIComponent(lines.join('\n'));
 }
 function productLink(p){const url=new URL(location.href);url.hash='';url.searchParams.delete('producto');url.searchParams.set('producto',p.id);return url.href;}
@@ -60,7 +60,7 @@ function render(){
       +'<img class="main-img" src="'+esc(list[0])+'" alt="'+esc(list[0]==='assets/timeless-mariposa.svg'?'Fotografía pendiente':p.name)+'" loading="lazy" decoding="async">'
       +(discount?'<span class="discount">-'+discount+'% oferta</span>':'')
       +'</div><div class="photo-meta" aria-label="Galería fotográfica de '+esc(p.name)+'">'+list.length+' fotografía'+(list.length===1?'':'s')+' del producto</div>'+thumbs
-      +'<div class="body"><div class="category">'+esc(category(p))+'</div><h3>'+esc(p.name)+'</h3><div class="desc">'+esc(p.description||'Una pieza de nuestra colección TIMELESS.')+'</div>'
+      +'<div class="body"><div class="category">'+esc(category(p))+'</div><h3>'+esc(p.name)+'</h3><div class="desc">'+esc(p.description||'Una pieza de nuestra colección Timeless TCO.')+'</div>'
       +'<div class="price">'+(regular>price&&price>0?'<span class="old">'+money(regular)+'</span>':'')+'<span class="current">'+(price>0?money(price):'Consultar')+'</span></div>'
       +'<div class="actions">'+(out?'<a class="add" href="'+esc(messageLink(p))+'" target="_blank" rel="noopener noreferrer">Consultar disponibilidad</a>':'<button type="button" class="add" data-cart-add="'+esc(p.id)+'">Agregar al carrito</button>')
       +'<button type="button" class="details" data-detail="'+esc(p.id)+'" aria-label="Ver detalles de '+esc(p.name)+'">Ver detalles</button></div>'
@@ -75,7 +75,7 @@ function openDetail(id,updateUrl=true){
  modalProduct=p;modalImages=photos(p);modalIndex=0;
  const pics=modalImages,now=itemPrice(p),before=Number(p.price_clp)||0;
  const layer=$('product-modal');
- $('modal-title').textContent=p.name||'Modelo TIMELESS';
+ $('modal-title').textContent=p.name||'Modelo Timeless TCO';
  $('modal-category').textContent=category(p);
  $('modal-photo').src=pics[0];
  $('modal-photo').alt=p.name||'Fotografía del producto';
@@ -125,7 +125,7 @@ async function loadCatalog(){
     products=data||[];loadingError=false;
     buildCategories();
     if(!initialDeepLinkHandled){initialDeepLinkHandled=true;const id=new URLSearchParams(location.search).get('producto');if(id&&productById(id))openDetail(id,false)}
-  }catch(error){console.error('Catálogo TIMELESS',error);loadingError=true}
+  }catch(error){console.error('Catálogo Timeless TCO',error);loadingError=true}
   $('loader')?.remove();render();renderCart();
 }
 document.addEventListener('click',event=>{
@@ -210,7 +210,7 @@ function renderCart(){
   +'<span>'+quantity+'</span><button type="button" data-cart-qty="'+esc(p.id)+'" data-delta="1" '+(quantity>=stock?'disabled':'')+' aria-label="Agregar una unidad de '+esc(p.name)+'">+</button>'
   +'<button class="cart-remove" type="button" data-cart-remove="'+esc(p.id)+'">Eliminar</button></div></div>'
   +'<strong>'+money(quantity*price)+'</strong></article>').join(''):'<p class="cart-empty">Tu carrito está vacío. Explora nuestra colección y agrega tus favoritas.</p>';
- const msg=['Hola TIMELESS, quiero realizar este pedido:'];
+ const msg=['Hola Timeless TCO, quiero realizar este pedido:'];
  rows.forEach(({p,quantity,price},i)=>msg.push((i+1)+'. '+p.name+' ('+(p.sku||'Sin código')+') x'+quantity+' — '+money(price*quantity)));
  msg.push('Subtotal referencial: '+money(total),'Por favor, confirmen disponibilidad, despacho a mi comuna y medios de pago. Entiendo que la compra se confirma cuando acordemos el pago y entrega.');
  const a=$('cart-checkout');
