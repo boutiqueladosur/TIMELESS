@@ -27,11 +27,12 @@ function messageLink(p){
 }
 function productLink(p){const url=new URL('https://www.timelesstco.cl/');url.searchParams.set('producto',p.id);return url.href;}
 function productById(id){return products.find(p=>String(p.id)===String(id));}
+function photoAlt(p,url,index){const row=(p?.product_images||[]).find(r=>r.image_url===url);const custom=String(row?.alt_text||'').trim();return custom&&custom!==p?.name?custom:(p?.name||'Cartera Timeless TCO')+' — fotografía '+(index+1);}
 function showImage(index){
  if(!modalImages.length)return;
  modalIndex=(index+modalImages.length)%modalImages.length;
  const photo=$('modal-photo');
- photo.src=modalImages[modalIndex];photo.alt='Fotografía '+(modalIndex+1)+' de '+modalImages.length+' de '+(modalProduct?.name||'la cartera');
+ photo.src=modalImages[modalIndex];photo.alt=photoAlt(modalProduct,modalImages[modalIndex],modalIndex);
  $('modal-count').textContent=modalImages.length>1?'Fotografía '+(modalIndex+1)+' de '+modalImages.length:'';
  $('modal-thumbs').querySelectorAll('[data-modal-index]').forEach(b=>b.classList.toggle('active',Number(b.dataset.modalIndex)===modalIndex));
 }
@@ -43,7 +44,7 @@ function updateCatalogSchema(){
   const price=itemPrice(p);if(price>0)item.offers={"@type":"Offer",url:productLink(p),priceCurrency:"CLP",price:price,availability:Number(p.stock)>0?"https://schema.org/InStock":"https://schema.org/OutOfStock",seller:{"@type":"Organization",name:"Timeless TCO"}};
   return {"@type":"ListItem",position:i+1,item};
  });
- el.textContent=JSON.stringify({"@context":"https://schema.org","@type":"ItemList",itemListElement:items});
+ el.textContent=JSON.stringify({"@context":"https://schema.org","@type":"ItemList","@id":"https://www.timelesstco.cl/#coleccion-list",name:"Colección Timeless TCO",itemListElement:items});
 }
 function buildCategories(){
   const cats=[...new Set(products.map(category))].sort((a,b)=>a.localeCompare(b,'es'));
@@ -68,7 +69,7 @@ function render(){
     const thumbs=list.length>1?'<div class="thumbs">'+list.map((url,i)=>'<button type="button" class="thumb '+(i===0?'active':'')+'" data-image="'+esc(url)+'" aria-label="Fotografía '+(i+1)+' de '+esc(p.name)+'"><img src="'+esc(url)+'" alt="" loading="lazy" decoding="async"></button>').join('')+'</div>':'<div class="thumbs" aria-hidden="true"></div>';
     return '<article class="card '+(out?'stock-out':'')+'">'
       +'<div class="media">'+(out?'<span class="stock-label">Consultar stock</span>':(p.is_featured?'<span class="feature-label">Destacado</span>':''))
-      +'<img class="main-img" src="'+esc(list[0])+'" alt="'+esc(list[0]==='assets/timeless-mariposa.svg'?'Fotografía pendiente':p.name)+'" loading="'+(index<2?'eager':'lazy')+'" fetchpriority="'+(index===0?'high':'auto')+'" decoding="async">'
+      +'<img class="main-img" src="'+esc(list[0])+'" alt="'+esc(list[0]==='assets/timeless-mariposa.svg'?'Fotografía pendiente':photoAlt(p,list[0],0))+'" loading="'+(index<2?'eager':'lazy')+'" fetchpriority="'+(index===0?'high':'auto')+'" decoding="async">'
       +(discount?'<span class="discount">-'+discount+'% oferta</span>':'')
       +'</div><div class="photo-meta" aria-label="Galería fotográfica de '+esc(p.name)+'">'+list.length+' fotografía'+(list.length===1?'':'s')+' del producto</div>'+thumbs
       +'<div class="body"><div class="category">'+esc(category(p))+'</div><h3>'+esc(p.name)+'</h3><div class="desc">'+esc(p.description||'Una pieza de nuestra colección Timeless TCO.')+'</div>'
@@ -136,7 +137,7 @@ async function loadCatalog(){
   const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),15000);
   try{
     const {data,error}=await db.from('products')
-      .select('id,sku,name,description,price_clp,sale_price_clp,is_featured,is_active,stock,material,color,dimensions,compartments,category_id,categories(name),product_images(image_url,sort_order,is_primary)')
+      .select('id,sku,name,description,price_clp,sale_price_clp,is_featured,is_active,stock,material,color,dimensions,compartments,category_id,categories(name),product_images(image_url,sort_order,is_primary,alt_text)')
       .eq('is_active',true).is('archived_at',null).order('is_featured',{ascending:false}).order('name',{ascending:true}).abortSignal(controller.signal);
     if(error)throw error;
     products=data||[];loadingError=false;updateCatalogSchema();
