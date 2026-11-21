@@ -35,6 +35,16 @@ function showImage(index){
  $('modal-count').textContent=modalImages.length>1?'Fotografía '+(modalIndex+1)+' de '+modalImages.length:'';
  $('modal-thumbs').querySelectorAll('[data-modal-index]').forEach(b=>b.classList.toggle('active',Number(b.dataset.modalIndex)===modalIndex));
 }
+function updateCatalogSchema(){
+ const el=$('catalog-schema');if(!el)return;
+ const items=products.map((p,i)=>{
+  const item={"@type":"Product",name:p.name,description:p.description||p.name,image:photos(p).filter(u=>u.startsWith('https:')),sku:p.sku,brand:{"@type":"Brand",name:"Timeless TCO"},category:category(p),url:productLink(p)};
+  if(p.color)item.color=p.color;if(p.material)item.material=p.material;
+  const price=itemPrice(p);if(price>0)item.offers={"@type":"Offer",url:productLink(p),priceCurrency:"CLP",price:price,availability:Number(p.stock)>0?"https://schema.org/InStock":"https://schema.org/OutOfStock",seller:{"@type":"Organization",name:"Timeless TCO"}};
+  return {"@type":"ListItem",position:i+1,item};
+ });
+ el.textContent=JSON.stringify({"@context":"https://schema.org","@type":"ItemList",itemListElement:items});
+}
 function buildCategories(){
   const cats=[...new Set(products.map(category))].sort((a,b)=>a.localeCompare(b,'es'));
   $('categories').innerHTML=[['todos','Todos'],...cats.map(c=>[norm(c),c])].map(([id,label])=>'<button class="chip '+(selected===id?'active':'')+'" type="button" data-cat="'+esc(id)+'">'+esc(label)+'</button>').join('');
@@ -129,7 +139,7 @@ async function loadCatalog(){
       .select('id,sku,name,description,price_clp,sale_price_clp,is_featured,is_active,stock,material,color,dimensions,compartments,category_id,categories(name),product_images(image_url,sort_order,is_primary)')
       .eq('is_active',true).is('archived_at',null).order('is_featured',{ascending:false}).order('name',{ascending:true}).abortSignal(controller.signal);
     if(error)throw error;
-    products=data||[];loadingError=false;
+    products=data||[];loadingError=false;updateCatalogSchema();
     buildCategories();
     if(!initialDeepLinkHandled){initialDeepLinkHandled=true;const id=new URLSearchParams(location.search).get('producto');if(id&&productById(id))openDetail(id,false)}
   }catch(error){console.error('Catálogo Timeless TCO',error);loadingError=true}
