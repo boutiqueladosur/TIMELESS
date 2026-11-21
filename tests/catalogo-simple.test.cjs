@@ -39,7 +39,7 @@ test('ERP modules and checkout are absent from the store project',()=>{
 
 test('Admin keeps MFA and idle-session security',()=>{
   assert.match(admin,/security-admin\.js/);
-  assert.match(admin,/session-idle\.js/);
+  assert.match(readFileSync('security-admin.js','utf8'),/IDLE_MS/);
 });
 
 test('All inline scripts parse correctly',()=>{
@@ -90,7 +90,7 @@ test('Official Timeless identity appears on website and administration panel',()
 test('Mobile catalog keeps the product-detail button visible and touch gallery navigation',()=>{
   const css=readFileSync('catalogo-estilo.css','utf8');
   assert.match(catalog,/data-detail/);
-  assert.match(catalog,/Ver fotos y detalles/);
+  assert.match(catalog,/Ver detalles/);
   assert.match(css,/\.card \.details\{display:flex!important/);
   assert.match(shop,/id="modal-prev"/);
   assert.match(shop,/id="modal-next"/);
@@ -113,7 +113,7 @@ test('Honest WhatsApp process, buying guidance and updated privacy',()=>{
   assert.match(shop,/id="como-comprar"/);
   assert.match(shop,/Confirma disponibilidad, costo y plazo/);
   assert.match(catalog,/Cuánto cuesta el despacho/);
-  assert.match(privacy,/No ofrece carrito de compra ni registra pedidos automáticamente/);
+  assert.match(privacy,/El carrito usa el almacenamiento local del navegador/);
   assert.doesNotMatch(privacy,/La tienda utiliza almacenamiento local del navegador para conservar los productos/);
 });
 test('Public storefront has a single semantic H1 and canonical URL',()=>{
