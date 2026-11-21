@@ -63,7 +63,7 @@ body{background:linear-gradient(150deg,#fffefd,#fff5e9);color:var(--ink)}
       <div class="field"><label>Precio oferta CLP</label><input id="sale-price" type="number" min="0" step="1"></div>
       <div class="field"><label>Descuento %</label><input id="discount-percent" type="number" min="0" max="100" step="1" placeholder="Ej: 25"><div id="discount-help" class="small muted">Opcional · se calcula automáticamente.</div></div>
       <div class="field"><label>Material</label><input id="material" maxlength="100"></div>
-      <div class="field"><label>Color</label><input id="color" maxlength="80"></div>
+      <div class="field"><label>Color</label><input id="color" maxlength="80"></div><div class="field"><label for="dimensions">Medidas (cm)</label><input id="dimensions" maxlength="150" placeholder="Ancho × alto × fondo"></div><div class="field"><label for="compartments">Compartimentos</label><input id="compartments" maxlength="300" placeholder="Bolsillos, divisiones y cierres verificados"></div>
     </div>
     <div class="field"><label>Descripción</label><textarea id="description" rows="4" maxlength="1200"></textarea></div>
     <div class="checkline"><label><input id="is-active" type="checkbox" checked> Producto activo</label><label><input id="is-featured" type="checkbox"> Destacado</label></div>
@@ -110,7 +110,7 @@ function showLogin(msg=''){$('app-view').classList.add('hidden');$('login-view')
 async function loadAll(){
  try{
   const [pc,cc,sc]=await Promise.all([
-   db.from('products').select('id,category_id,sku,slug,name,description,price_clp,sale_price_clp,stock,low_stock_threshold,is_active,is_featured,material,color,product_images(id,image_url,sort_order,is_primary)').is('archived_at',null).order('created_at',{ascending:false}),
+   db.from('products').select('id,category_id,sku,slug,name,description,price_clp,sale_price_clp,stock,low_stock_threshold,is_active,is_featured,material,color,dimensions,compartments,product_images(id,image_url,sort_order,is_primary)').is('archived_at',null).order('created_at',{ascending:false}),
    db.from('categories').select('id,name,is_active,sort_order').order('sort_order'),
    db.from('store_settings').select('whatsapp_number').eq('id',1).single()
   ]);
@@ -127,7 +127,7 @@ const photoInputs=Array.from({length:4},(_,i)=>$('photo-'+(i+1)));
 function pendingFiles(){return photoInputs.flatMap(input=>Array.from(input.files||[]))}
 function renderPendingImages(){const count=editing?.product_images?.length||0;$('pending-images').textContent=count+' guardadas · '+pendingFiles().length+' nuevas · máximo 4';photoInputs.forEach((input,i)=>{input.disabled=i>=Math.max(0,4-count);$('clear-photo-'+(i+1)).disabled=input.disabled})}
 photoInputs.forEach((input,i)=>{input.addEventListener('change',()=>{try{validateImageFiles(pendingFiles())}catch(e){input.value='';toast(e.message)}renderPendingImages()});$('clear-photo-'+(i+1)).addEventListener('click',()=>{input.value='';renderPendingImages()})});
-function openEditor(p=null){photoInputs.forEach(input=>input.value='');editing=p;$('editor-title').textContent=p?'Editar producto':'Nuevo producto';$('product-id').value=p?.id||'';$('name').value=p?.name||'';$('sku').value=p?.sku||'';$('category').value=p?.category_id||'';$('stock').value=p?.stock??0;$('price').value=p?.price_clp??'';$('sale-price').value=p?.sale_price_clp??'';$('discount-percent').value=(p?.sale_price_clp!=null&&Number(p.price_clp)>0)?Math.round((1-Number(p.sale_price_clp)/Number(p.price_clp))*100):'';$('material').value=p?.material||'';$('color').value=p?.color||'';$('description').value=p?.description||'';$('is-active').checked=p?.is_active??true;$('is-featured').checked=p?.is_featured??false;$('low-threshold').value=p?.low_stock_threshold??3;$('discount-help').textContent=$('discount-percent').value?`Descuento aplicado: ${$('discount-percent').value}%`:'Opcional · se calcula automáticamente.';renderImages(p);renderPendingImages();$('stock-adjustment').classList.toggle('hidden',!p);$('editor').classList.remove('hidden')}
+function openEditor(p=null){photoInputs.forEach(input=>input.value='');editing=p;$('editor-title').textContent=p?'Editar producto':'Nuevo producto';$('product-id').value=p?.id||'';$('name').value=p?.name||'';$('sku').value=p?.sku||'';$('category').value=p?.category_id||'';$('stock').value=p?.stock??0;$('price').value=p?.price_clp??'';$('sale-price').value=p?.sale_price_clp??'';$('discount-percent').value=(p?.sale_price_clp!=null&&Number(p.price_clp)>0)?Math.round((1-Number(p.sale_price_clp)/Number(p.price_clp))*100):'';$('material').value=p?.material||'';$('color').value=p?.color||'';$('dimensions').value=p?.dimensions||'';$('compartments').value=p?.compartments||'';$('description').value=p?.description||'';$('is-active').checked=p?.is_active??true;$('is-featured').checked=p?.is_featured??false;$('low-threshold').value=p?.low_stock_threshold??3;$('discount-help').textContent=$('discount-percent').value?`Descuento aplicado: ${$('discount-percent').value}%`:'Opcional · se calcula automáticamente.';renderImages(p);renderPendingImages();$('stock-adjustment').classList.toggle('hidden',!p);$('editor').classList.remove('hidden')}
 function closeEditor(){$('editor').classList.add('hidden');editing=null}
 function renderImages(p){const imgs=[...(p?.product_images||[])].sort((a,b)=>(Number(b.is_primary)-Number(a.is_primary))||((a.sort_order||0)-(b.sort_order||0)));$('existing-images').innerHTML=imgs.map(img=>`<div class="img-card"><img src="${esc(img.image_url)}" alt=""><div class="img-actions">${img.is_primary?'<span class="pill ok">Principal</span>':`<button type="button" class="btn secondary small" data-primary="${esc(img.id)}">Hacer principal</button>`}<button type="button" class="btn danger small" data-delete-image="${esc(img.id)}">Eliminar imagen</button></div></div>`).join('')}
 function storagePathFromUrl(url){
@@ -190,7 +190,7 @@ async function saveProduct(e){
   if(sale!==null&&(!Number.isSafeInteger(sale)||sale<0||sale>price))throw new Error('El precio de oferta debe ser un entero entre cero y el precio normal.');
   validateImageFiles(files);if(files.length+(editing?.product_images?.length||0)>4)throw new Error('Máximo 4 fotografías por producto.');await requireMfa();
   const threshold=Math.max(0,Math.min(1000000,Math.round(Number($('low-threshold').value)||0)));
-  const payload={name,sku,slug:slugify(name)+'-'+slugify(sku),category_id:$('category').value||null,description:$('description').value.trim()||null,price_clp:price,sale_price_clp:sale,low_stock_threshold:threshold,is_active:$('is-active').checked,is_featured:$('is-featured').checked,material:$('material').value.trim()||null,color:$('color').value.trim()||null,updated_at:new Date().toISOString()};
+  const payload={name,sku,slug:slugify(name)+'-'+slugify(sku),category_id:$('category').value||null,description:$('description').value.trim()||null,price_clp:price,sale_price_clp:sale,low_stock_threshold:threshold,is_active:$('is-active').checked,is_featured:$('is-featured').checked,material:$('material').value.trim()||null,color:$('color').value.trim()||null,dimensions:$('dimensions').value.trim()||null,compartments:$('compartments').value.trim()||null,updated_at:new Date().toISOString()};
   saving=true;$('save-product').disabled=true;
   let productId=editing?.id||null,createdNew=false,metadataUpdated=false,createdImages=[];
   try{
@@ -240,6 +240,6 @@ ensureAdmin().catch(err=>{console.error(err);showLogin('No se pudo conectar con 
 </script>
 <script src="security-admin.js?v=20261106-catalog-only"></script>
 
-<script src="site-content.js?v=3"></script>
+<script src="site-content.js?v=4"></script>
 </body>
 </html>
