@@ -382,3 +382,14 @@ body.cart-open{overflow:hidden}
  .cart-trigger,.contact-mini{transition:none}
  .cart-trigger:hover,.contact-mini:hover{transform:none}
 }
+
+/* TIMELESS TCO: catálogo móvil en una sola columna (20-11-2026). */
+@media screen and (max-width:640px){
+  #coleccion .grid,
+  .collection .grid,
+  .catalog .grid,
+  .grid{grid-template-columns:minmax(0,1fr);gap:30px}
+  .card .details{display:inline-flex}
+  .card .actions{grid-template-columns:minmax(0,1fr) auto}
+  .card .thumbs{display:flex}
+}
