@@ -10,7 +10,15 @@ const itemPrice=p=>p.sale_price_clp==null?Number(p.price_clp)||0:Number(p.sale_p
 const category=p=>p.categories?.name||'Colección';
 function photos(p){
   const rows=[...(p.product_images||[])].sort((a,b)=>Number(b.is_primary)-Number(a.is_primary)||(Number(a.sort_order)||0)-(Number(b.sort_order)||0));
-  const urls=rows.map(r=>{try{const u=new URL(r.image_url,location.href);return u.protocol==='https:'?u.href:''}catch{return''}}).filter(Boolean);
+  const urls=rows.map(r=>{try{
+    const u=new URL(r.image_url,location.href);
+    // Las fotos ya están publicadas en GitHub Pages: cargarlas desde el mismo sitio
+    // evita depender del host raw.githubusercontent.com para cada miniatura.
+    if(u.hostname==='raw.githubusercontent.com'&&u.pathname.startsWith('/boutiqueladosur/TIMELESS/main/assets/')){
+      return new URL(u.pathname.replace('/boutiqueladosur/TIMELESS/main/',''),new URL('.',location.href)).href;
+    }
+    return u.protocol==='https:'?u.href:'';
+  }catch{return''}}).filter(Boolean);
   return urls.length?[...new Set(urls)]:['assets/timeless-mariposa.svg'];
 }
 function messageLink(p){
@@ -46,12 +54,12 @@ function render(){
   $('grid').innerHTML=rows.map(p=>{
     const list=photos(p),price=itemPrice(p),regular=Number(p.price_clp)||0,out=Number(p.stock||0)<=0;
     const discount=price>0&&regular>price?Math.round((1-price/regular)*100):0;
-    const thumbs=list.length>1?'<div class="thumbs">'+list.map((url,i)=>'<button type="button" class="thumb '+(i===0?'active':'')+'" data-image="'+esc(url)+'" aria-label="Fotografía '+(i+1)+'"><img src="'+esc(url)+'" alt=""></button>').join('')+'</div>':'<div class="thumbs" aria-hidden="true"></div>';
+    const thumbs=list.length>1?'<div class="thumbs">'+list.map((url,i)=>'<button type="button" class="thumb '+(i===0?'active':'')+'" data-image="'+esc(url)+'" aria-label="Fotografía '+(i+1)+' de '+list.length+'"><img src="'+esc(url)+'" alt="" loading="lazy" decoding="async"></button>').join('')+'</div>':'<div class="thumbs" aria-hidden="true"></div>';
     return '<article class="card '+(out?'stock-out':'')+'">'
       +'<div class="media">'+(out?'<span class="stock-label">Consultar stock</span>':(p.is_featured?'<span class="feature-label">Destacado</span>':''))
-      +'<img class="main-img" src="'+esc(list[0])+'" alt="'+esc(list[0]==='assets/timeless-mariposa.svg'?'Fotografía pendiente':p.name)+'" loading="lazy">'
+      +'<img class="main-img" src="'+esc(list[0])+'" alt="'+esc(list[0]==='assets/timeless-mariposa.svg'?'Fotografía pendiente':p.name)+'" loading="lazy" decoding="async">'
       +(discount?'<span class="discount">-'+discount+'% oferta</span>':'')
-      +'</div>'+thumbs
+      +'</div><div class="photo-meta" aria-label="Galería fotográfica de '+esc(p.name)+'">'+list.length+' fotografía'+(list.length===1?'':'s')+' del producto</div>'+thumbs
       +'<div class="body"><div class="category">'+esc(category(p))+'</div><h3>'+esc(p.name)+'</h3><div class="desc">'+esc(p.description||'Una pieza de nuestra colección TIMELESS.')+'</div>'
       +'<div class="price">'+(regular>price&&price>0?'<span class="old">'+money(regular)+'</span>':'')+'<span class="current">'+(price>0?money(price):'Consultar')+'</span></div>'
       +'<div class="actions">'+(out?'<a class="add" href="'+esc(messageLink(p))+'" target="_blank" rel="noopener noreferrer">Consultar disponibilidad</a>':'<button type="button" class="add" data-cart-add="'+esc(p.id)+'">Agregar al carrito</button>')
@@ -82,7 +90,7 @@ function openDetail(id,updateUrl=true){
  $('modal-whatsapp').href=messageLink(p);
  $('modal-cart-add').hidden=Number(p.stock||0)<=0;
  $('modal-cart-add').dataset.productId=p.id;
- $('modal-thumbs').innerHTML=pics.length>1?pics.map((src,i)=>'<button type="button" data-modal-index="'+i+'" class="'+(i===0?'active':'')+'" aria-label="Ver foto '+(i+1)+'"><img src="'+esc(src)+'" alt=""></button>').join(''):'';
+ $('modal-thumbs').innerHTML=pics.length>1?pics.map((src,i)=>'<button type="button" data-modal-index="'+i+'" class="'+(i===0?'active':'')+'" aria-label="Ver foto '+(i+1)+' de '+pics.length+'"><img src="'+esc(src)+'" alt="" loading="lazy" decoding="async"></button>').join(''):'';
  showImage(0);$('modal-copy-status').textContent='';
  if(updateUrl){const url=new URL(location.href);url.searchParams.set('producto',p.id);history.pushState({producto:p.id},'',url.pathname+url.search+url.hash)}
  layer.hidden=false;
