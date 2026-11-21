@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id);
 const money=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(Number(v)||0);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const norm=s=>String(s??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-let products=[],selected='todos',whatsapp='56935707722',loadingError=false,modalProduct=null,modalImages=[],modalIndex=0,initialDeepLinkHandled=false;
+let products=[],selected='todos',whatsapp='56935707722',loadingError=false,modalProduct=null,modalImages=[],modalIndex=0,initialDeepLinkHandled=false,catalogLoading=true;
 const itemPrice=p=>p.sale_price_clp==null?Number(p.price_clp)||0:Number(p.sale_price_clp);
 const category=p=>p.categories?.name||'Colección';
 function photos(p){
@@ -48,16 +48,17 @@ function filtered(){
   return rows;
 }
 function render(){
+  if(catalogLoading)return;
   const rows=filtered();
   $('count').textContent=rows.length+' producto'+(rows.length===1?'':'s');
   $('filter-label').textContent=selected==='todos'?'':'Filtro activo';
-  $('grid').innerHTML=rows.map(p=>{
+  $('grid').innerHTML=rows.map((p,index)=>{
     const list=photos(p),price=itemPrice(p),regular=Number(p.price_clp)||0,out=Number(p.stock||0)<=0;
     const discount=price>0&&regular>price?Math.round((1-price/regular)*100):0;
     const thumbs=list.length>1?'<div class="thumbs">'+list.map((url,i)=>'<button type="button" class="thumb '+(i===0?'active':'')+'" data-image="'+esc(url)+'" aria-label="Fotografía '+(i+1)+' de '+list.length+'"><img src="'+esc(url)+'" alt="" loading="lazy" decoding="async"></button>').join('')+'</div>':'<div class="thumbs" aria-hidden="true"></div>';
     return '<article class="card '+(out?'stock-out':'')+'">'
       +'<div class="media">'+(out?'<span class="stock-label">Consultar stock</span>':(p.is_featured?'<span class="feature-label">Destacado</span>':''))
-      +'<img class="main-img" src="'+esc(list[0])+'" alt="'+esc(list[0]==='assets/timeless-mariposa.svg'?'Fotografía pendiente':p.name)+'" loading="lazy" decoding="async">'
+      +'<img class="main-img" src="'+esc(list[0])+'" alt="'+esc(list[0]==='assets/timeless-mariposa.svg'?'Fotografía pendiente':p.name)+'" loading="'+(index<2?'eager':'lazy')+'" fetchpriority="'+(index===0?'high':'auto')+'" decoding="async">'
       +(discount?'<span class="discount">-'+discount+'% oferta</span>':'')
       +'</div><div class="photo-meta" aria-label="Galería fotográfica de '+esc(p.name)+'">'+list.length+' fotografía'+(list.length===1?'':'s')+' del producto</div>'+thumbs
       +'<div class="body"><div class="category">'+esc(category(p))+'</div><h3>'+esc(p.name)+'</h3><div class="desc">'+esc(p.description||'Una pieza de nuestra colección Timeless TCO.')+'</div>'
@@ -87,6 +88,7 @@ function openDetail(id,updateUrl=true){
    $('modal-price').append(strike,document.createTextNode(money(now)));
  }else $('modal-price').textContent=now>0?money(now):'Precio a consultar';
  $('modal-info').textContent='Código: '+(p.sku||'—')+' · '+(Number(p.stock||0)>0?'Consultar disponibilidad para comprar':'Confirmar reposición por WhatsApp');
+ const specs=$('modal-specs');specs.replaceChildren();for(const [label,value] of [['Material',p.material],['Color',p.color],['Medidas',p.dimensions],['Compartimentos',p.compartments]]){if(!value||!String(value).trim())continue;const row=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;row.append(dt,dd);specs.append(row)}specs.hidden=!specs.children.length;
  $('modal-whatsapp').href=messageLink(p);
  $('modal-cart-add').hidden=Number(p.stock||0)<=0;
  $('modal-cart-add').dataset.productId=p.id;
@@ -117,16 +119,18 @@ async function loadContact(){
   render();renderCart();
 }
 async function loadCatalog(){
+  catalogLoading=true;$('grid').setAttribute('aria-busy','true');
+  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),15000);
   try{
     const {data,error}=await db.from('products')
-      .select('id,sku,name,description,price_clp,sale_price_clp,is_featured,is_active,stock,category_id,categories(name),product_images(image_url,sort_order,is_primary)')
-      .eq('is_active',true).order('is_featured',{ascending:false}).order('name',{ascending:true});
+      .select('id,sku,name,description,price_clp,sale_price_clp,is_featured,is_active,stock,material,color,dimensions,compartments,category_id,categories(name),product_images(image_url,sort_order,is_primary)')
+      .eq('is_active',true).is('archived_at',null).order('is_featured',{ascending:false}).order('name',{ascending:true}).abortSignal(controller.signal);
     if(error)throw error;
     products=data||[];loadingError=false;
     buildCategories();
     if(!initialDeepLinkHandled){initialDeepLinkHandled=true;const id=new URLSearchParams(location.search).get('producto');if(id&&productById(id))openDetail(id,false)}
   }catch(error){console.error('Catálogo Timeless TCO',error);loadingError=true}
-  $('loader')?.remove();render();renderCart();
+  clearTimeout(timeout);catalogLoading=false;$('grid').setAttribute('aria-busy','false');$('loader')?.remove();render();renderCart();
 }
 document.addEventListener('click',event=>{
   const add=event.target.closest('[data-cart-add]');if(add){addCart(add.dataset.cartAdd);return}
