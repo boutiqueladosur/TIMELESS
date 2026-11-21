@@ -25,7 +25,7 @@ function messageLink(p){
   const lines=['Hola Timeless TCO, quisiera consultar por esta cartera:',p.name,'Código: '+(p.sku||'Sin código'),'Precio publicado: '+(itemPrice(p)>0?money(itemPrice(p)):'A consultar'),'Enlace: '+productLink(p),'¿Está disponible? ¿Cuánto cuesta el despacho a mi comuna y qué formas de pago aceptan?'];
   return 'https://wa.me/'+whatsapp+'?text='+encodeURIComponent(lines.join('\n'));
 }
-function productLink(p){const url=new URL(location.href);url.hash='';url.searchParams.delete('producto');url.searchParams.set('producto',p.id);return url.href;}
+function productLink(p){const url=new URL('https://www.timelesstco.cl/');url.searchParams.set('producto',p.id);return url.href;}
 function productById(id){return products.find(p=>String(p.id)===String(id));}
 function showImage(index){
  if(!modalImages.length)return;
@@ -41,7 +41,7 @@ function buildCategories(){
 }
 function filtered(){
   const search=norm($('search').value),sort=$('sort').value;
-  const rows=products.filter(p=>(selected==='todos'||norm(category(p))===selected)&&(!search||norm([p.name,p.description,p.sku,category(p)].join(' ')).includes(search)));
+  const rows=products.filter(p=>(selected==='todos'||norm(category(p))===selected)&&(!search||norm([p.name,p.description,p.sku,p.color,p.material,category(p)].join(' ')).includes(search)));
   if(sort==='price-asc')rows.sort((a,b)=>itemPrice(a)-itemPrice(b));
   if(sort==='price-desc')rows.sort((a,b)=>itemPrice(b)-itemPrice(a));
   if(sort==='name')rows.sort((a,b)=>String(a.name).localeCompare(String(b.name),'es'));
@@ -55,7 +55,7 @@ function render(){
   $('grid').innerHTML=rows.map((p,index)=>{
     const list=photos(p),price=itemPrice(p),regular=Number(p.price_clp)||0,out=Number(p.stock||0)<=0;
     const discount=price>0&&regular>price?Math.round((1-price/regular)*100):0;
-    const thumbs=list.length>1?'<div class="thumbs">'+list.map((url,i)=>'<button type="button" class="thumb '+(i===0?'active':'')+'" data-image="'+esc(url)+'" aria-label="Fotografía '+(i+1)+' de '+list.length+'"><img src="'+esc(url)+'" alt="" loading="lazy" decoding="async"></button>').join('')+'</div>':'<div class="thumbs" aria-hidden="true"></div>';
+    const thumbs=list.length>1?'<div class="thumbs">'+list.map((url,i)=>'<button type="button" class="thumb '+(i===0?'active':'')+'" data-image="'+esc(url)+'" aria-label="Fotografía '+(i+1)+' de '+esc(p.name)+'"><img src="'+esc(url)+'" alt="" loading="lazy" decoding="async"></button>').join('')+'</div>':'<div class="thumbs" aria-hidden="true"></div>';
     return '<article class="card '+(out?'stock-out':'')+'">'
       +'<div class="media">'+(out?'<span class="stock-label">Consultar stock</span>':(p.is_featured?'<span class="feature-label">Destacado</span>':''))
       +'<img class="main-img" src="'+esc(list[0])+'" alt="'+esc(list[0]==='assets/timeless-mariposa.svg'?'Fotografía pendiente':p.name)+'" loading="'+(index<2?'eager':'lazy')+'" fetchpriority="'+(index===0?'high':'auto')+'" decoding="async">'
@@ -69,9 +69,11 @@ function render(){
   }).join('')||(loadingError?'<div class="loader catalog-error" style="grid-column:1/-1"><p>No pudimos conectar con el catálogo en este momento.</p><button type="button" class="details" id="retry-catalog">Volver a intentar</button></div>':'<div class="loader" style="grid-column:1/-1">No hay productos que coincidan.</div>');
 }
 let lastModalFocus=null;
+const homeTitle=document.title;const homeDescription=document.querySelector('meta[name="description"]')?.content||'';
 function openDetail(id,updateUrl=true){
  const p=productById(id);
  if(!p)return;
+ document.title=p.name+' | Timeless TCO';const descriptionTag=document.querySelector('meta[name="description"]');if(descriptionTag)descriptionTag.content=(p.description||p.name).slice(0,160);
  lastModalFocus=document.activeElement;
  modalProduct=p;modalImages=photos(p);modalIndex=0;
  const pics=modalImages,now=itemPrice(p),before=Number(p.price_clp)||0;
@@ -103,6 +105,7 @@ function closeDetail(updateUrl=true){
  const layer=$('product-modal');
  if(layer.hidden)return;
  layer.hidden=true;
+ document.title=homeTitle;const descriptionTag=document.querySelector('meta[name="description"]');if(descriptionTag)descriptionTag.content=homeDescription;
  modalProduct=null;modalImages=[];
  if(updateUrl){const url=new URL(location.href);url.searchParams.delete('producto');history.replaceState(null,'',url.pathname+url.search+url.hash)}
  document.body.classList.remove('modal-open');
