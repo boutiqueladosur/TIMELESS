@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Timeless TCO · Panel de catálogo y WhatsApp</title>
 <link rel="icon" href="assets/timeless-mariposa.svg" type="image/svg+xml">
@@ -146,6 +147,23 @@ function validateImageFiles(files){
   if(!['image/jpeg','image/png','image/webp','image/avif'].includes(file.type))throw new Error(file.name+': formato no permitido.');
  }
 }
+async function optimizeProductImage(file){
+ const bmp=await createImageBitmap(file);
+ try{
+  const canvas=document.createElement('canvas');
+  const scale=Math.min(1,1400/Math.max(bmp.width,bmp.height));
+  canvas.width=Math.max(1,Math.round(bmp.width*scale));canvas.height=Math.max(1,Math.round(bmp.height*scale));
+  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('No se pudo procesar la fotografía');
+  ctx.drawImage(bmp,0,0,canvas.width,canvas.height);
+  let blob=null;
+  for(const q of [.88,.82,.76,.7]){
+   blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',q));
+   if(!blob||blob.type!=='image/webp')return file;
+   if(blob.size<=250*1024)break;
+  }
+  return blob&&blob.size<file.size?new File([blob],file.name.replace(/\.[^.]+$/,'')+'.webp',{type:'image/webp'}):file;
+ }finally{bmp.close()}
+}
 async function rollbackUploadedImages(productId,created){
  for(const record of created.slice().reverse()){
   if(record.id){const {error}=await db.from('product_images').delete().eq('id',record.id).eq('product_id',productId);if(error)console.error('Limpieza de foto incompleta',error)}
@@ -157,10 +175,11 @@ async function uploadImages(productId,files){
  const created=[];
  let order=current.length;
  try{
-  for(const file of files){
+  for(const original of files){
+   const file=await optimizeProductImage(original);
    const ext=({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif'})[file.type];
    const path=productId+'/'+crypto.randomUUID()+'.'+ext;
-   const {error:upErr}=await db.storage.from(BUCKET).upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});
+   const {error:upErr}=await db.storage.from(BUCKET).upload(path,file,{cacheControl:'31536000',upsert:false,contentType:file.type});
    if(upErr)throw upErr;
    const record={path,id:null};created.push(record);
    const {data:urlData}=db.storage.from(BUCKET).getPublicUrl(path);
