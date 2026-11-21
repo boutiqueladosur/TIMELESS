@@ -71,7 +71,7 @@ function render(){
       +'<div class="media">'+(out?'<span class="stock-label">Consultar stock</span>':(p.is_featured?'<span class="feature-label">Destacado</span>':''))
       +'<img class="main-img" src="'+esc(list[0])+'" alt="'+esc(list[0]==='assets/timeless-mariposa.svg'?'Fotografía pendiente':photoAlt(p,list[0],0))+'" loading="'+(index<2?'eager':'lazy')+'" fetchpriority="'+(index===0?'high':'auto')+'" decoding="async">'
       +(discount?'<span class="discount">-'+discount+'% oferta</span>':'')
-      +'</div><div class="photo-meta" aria-label="Galería fotográfica de '+esc(p.name)+'">'+list.length+' fotografía'+(list.length===1?'':'s')+' del producto</div>'+thumbs
+      +'</div>'+thumbs
       +'<div class="body"><div class="category">'+esc(category(p))+'</div><h3>'+esc(p.name)+'</h3><div class="desc">'+esc(p.description||'Una pieza de nuestra colección Timeless TCO.')+'</div>'
       +'<div class="price">'+(regular>price&&price>0?'<span class="old">'+money(regular)+'</span>':'')+'<span class="current">'+(price>0?money(price):'Consultar')+'</span></div>'
       +'<div class="actions">'+(out?'<a class="add" href="'+esc(messageLink(p))+'" target="_blank" rel="noopener noreferrer">Consultar disponibilidad</a>':'<button type="button" class="add" data-cart-add="'+esc(p.id)+'">Agregar al carrito</button>')
