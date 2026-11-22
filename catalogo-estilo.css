@@ -413,3 +413,11 @@ body.cart-open{overflow:hidden}
   #grid .card .details{display:flex}
   #grid .card .thumbs{display:flex}
 }
+
+/* Shared storefront card layout across viewport sizes */
+#grid .card .thumbs{display:flex}
+#grid .card .actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+#grid .card .details{display:inline-flex;align-items:center;justify-content:center;min-width:0;white-space:normal;text-align:center}
+#grid .card .details:disabled{opacity:.55;cursor:default}
+#grid .media .main-img{width:100%;height:100%;object-fit:contain}
+@media(max-width:640px){#coleccion #grid{grid-template-columns:minmax(0,1fr)!important;max-width:520px;margin-inline:auto}#grid .card .actions{grid-template-columns:minmax(0,1fr) minmax(0,.7fr)}#grid .card .details{width:100%}#grid .card h3{min-height:0;font-size:clamp(23px,5.8vw,30px)}#grid .card .desc{font-size:12px}#grid .card .current{font-size:15px}#grid .card .thumbs{justify-content:flex-start}#grid .card .thumb{width:48px;height:48px;flex-basis:48px}}
