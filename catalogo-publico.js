@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const db=window.supabase.createClient('https://nfphzvcwxyfkbucwwlcx.supabase.co','sb_publishable_DzvTmxOxVWY4LaKNqx2-xA_4RVK2TtS');
+const db=window.supabase?.createClient('https://nfphzvcwxyfkbucwwlcx.supabase.co','sb_publishable_DzvTmxOxVWY4LaKNqx2-xA_4RVK2TtS');
 const $=id=>document.getElementById(id);
 const money=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(Number(v)||0);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -58,7 +58,13 @@ function updateCatalogSchema(){
 }
 function buildCategories(){
   const cats=[...new Set(products.map(category))].sort((a,b)=>a.localeCompare(b,'es'));
-  $('categories').innerHTML=[['todos','Todos'],...cats.map(c=>[norm(c),c])].map(([id,label])=>'<button class="chip '+(selected===id?'active':'')+'" type="button" data-cat="'+esc(id)+'">'+esc(label)+'</button>').join('');
+  const options=[['todos','Todos'],...cats.map(c=>[norm(c),c])];
+  const existing=[...$('categories').querySelectorAll('[data-cat]')];
+  if(existing.length===options.length&&existing.every((b,i)=>b.dataset.cat===options[i][0]&&b.textContent===options[i][1])){
+    for(const b of existing){const active=b.dataset.cat===selected;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))}
+    return;
+  }
+  $('categories').innerHTML=options.map(([id,label])=>'<button class="chip '+(selected===id?'active':'')+'" type="button" data-cat="'+esc(id)+'" aria-pressed="'+String(selected===id)+'">'+esc(label)+'</button>').join('');
 }
 function filtered(){
   const search=norm($('search').value),sort=$('sort').value;
@@ -71,13 +77,13 @@ function filtered(){
 function render(){
   if(catalogLoading||(loadingError&&$('grid').querySelector('.card')))return;
   const rows=filtered();
-  $('count').textContent=rows.length+' producto'+(rows.length===1?'':'s');
-  $('filter-label').textContent=selected==='todos'?'':'Filtro activo';
-  $('grid').innerHTML=rows.map((p,index)=>{
+  const countLabel=rows.length+' producto'+(rows.length===1?'':'s');if($('count').textContent!==countLabel)$('count').textContent=countLabel;
+  const filterLabel=selected==='todos'?'':'Filtro activo';if($('filter-label').textContent!==filterLabel)$('filter-label').textContent=filterLabel;
+  const markup=rows.map((p,index)=>{
     const list=photos(p),price=itemPrice(p),regular=Number(p.price_clp)||0,out=Number(p.stock||0)<=0;
     const discount=price>0&&regular>price?Math.round((1-price/regular)*100):0;
     const thumbs=list.length>1?'<div class="thumbs">'+list.map((url,i)=>'<button type="button" class="thumb '+(i===0?'active':'')+'" data-image="'+esc(variant(p,url,'catalog'))+'" data-alt="'+esc(photoAlt(p,url,i))+'" aria-label="Fotografía '+(i+1)+' de '+esc(p.name)+'"><img src="'+esc(variant(p,url,'thumb'))+'" width="200" height="200" alt="" loading="lazy" decoding="async"></button>').join('')+'</div>':'<div class="thumbs" aria-hidden="true"></div>';
-    return '<article class="card '+(out?'stock-out':'')+'">'
+    return '<article class="card '+(out?'stock-out':'')+'" data-product-id="'+esc(p.id)+'">'
       +'<div class="media">'+(out?'<span class="stock-label">Consultar stock</span>':(p.is_featured?'<span class="feature-label">Destacado</span>':''))
       +'<img class="main-img" src="'+esc(variant(p,list[0],'catalog'))+'" width="700" height="875" alt="'+esc(list[0]==='assets/logo-timeless-dorado-2026.svg'?'Fotografía pendiente':photoAlt(p,list[0],0))+'" loading="'+(index<2?'eager':'lazy')+'" fetchpriority="'+(index===0?'high':'auto')+'" decoding="async">'
       +(discount?'<span class="discount">-'+discount+'% oferta</span>':'')
@@ -88,6 +94,42 @@ function render(){
       +'<a class="details" href="'+esc(productLink(p))+'" aria-label="Ver detalles de '+esc(p.name)+'">Ver detalles</a></div>'
       +'</div></article>';
   }).join('')||(loadingError?'<div class="loader catalog-error" style="grid-column:1/-1"><p>No pudimos conectar con el catálogo en este momento.</p><button type="button" class="details" id="retry-catalog">Volver a intentar</button></div>':'<div class="loader" style="grid-column:1/-1">No hay productos que coincidan.</div>');
+  reconcileGrid(markup);
+}
+function reconcileGrid(markup){
+  const grid=$('grid'),template=document.createElement('template');template.innerHTML=markup;
+  const before=[...grid.children],next=[...template.content.children];
+  const oldById=new Map(before.filter(el=>el.dataset.productId).map(el=>[el.dataset.productId,el]));
+  const desired=next.map(fresh=>{
+    const card=oldById.get(fresh.dataset.productId);if(!card)return fresh;
+    // Keep loaded images and selected thumbnails when the gallery itself is unchanged.
+    const oldThumbs=[...card.querySelectorAll('.thumb')],newThumbs=[...fresh.querySelectorAll('.thumb')];
+    const oldImg=card.querySelector('.main-img'),newImg=fresh.querySelector('.main-img');
+    const sameGallery=oldImg&&newImg&&oldThumbs.length===newThumbs.length&&oldThumbs.every((b,i)=>b.dataset.image===newThumbs[i].dataset.image&&b.querySelector('img')?.getAttribute('src')===newThumbs[i].querySelector('img')?.getAttribute('src'))&&(oldThumbs.length||oldImg.getAttribute('src')===newImg.getAttribute('src'));
+    if(!sameGallery){const media=card.querySelector('.media'),thumbs=card.querySelector('.thumbs');if(media)media.replaceWith(fresh.querySelector('.media'));if(thumbs)thumbs.replaceWith(fresh.querySelector('.thumbs'))}
+    else{
+      for(const sel of ['.stock-label','.feature-label','.discount']){
+        const a=card.querySelector(sel),b=fresh.querySelector(sel);
+        if(a&&b){if(a.textContent!==b.textContent)a.textContent=b.textContent}
+        else if(a)a.remove();else if(b)card.querySelector('.media').append(b.cloneNode(true));
+      }
+    }
+    for(const sel of ['.category','h3','.desc','.price','.actions']){
+      const a=card.querySelector(sel),b=fresh.querySelector(sel);
+      if(a&&b){
+        if(sel==='.price'||sel==='.actions'){
+          // Relative and absolute links to the same page are equivalent.
+          const normalize=node=>{const clone=node.cloneNode(true);for(const link of clone.querySelectorAll('a[href]'))link.setAttribute('href',link.href);for(const link of clone.querySelectorAll('.details'))link.removeAttribute('aria-label');return clone.innerHTML};
+          if(normalize(a)!==normalize(b))a.replaceChildren(...b.childNodes);
+        }else if(a.textContent!==b.textContent)a.textContent=b.textContent;
+      }
+    }
+    card.className=fresh.className;
+    card.removeAttribute('data-static-card');
+    return card;
+  });
+  const keep=new Set(desired);for(const el of before)if(!keep.has(el))el.remove();
+  desired.forEach((el,i)=>{if(grid.children[i]!==el)grid.insertBefore(el,grid.children[i]||null)});
 }
 let lastModalFocus=null;
 const homeTitle=document.title;const homeDescription=document.querySelector('meta[name="description"]')?.content||'';
@@ -140,7 +182,7 @@ async function loadContact(){
     if(/^\d{8,15}$/.test(number))whatsapp=number;
   }catch(error){console.warn('Usando WhatsApp predeterminado',error)}
   for(const id of ['whatsapp-header','whatsapp-link','whatsapp-fab','whatsapp-footer']){const a=$(id);if(a)a.href='https://wa.me/'+whatsapp}
-  render();renderCart();
+  if(!catalogLoading){render();renderCart()}
 }
 async function loadCatalog(){
   catalogLoading=true;const status=$('loader');if(status)status.textContent='Actualizando colección…';$('grid').setAttribute('aria-busy','true');
