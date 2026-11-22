@@ -61,10 +61,11 @@ function buildCategories(){
   const options=[['todos','Todos'],...cats.map(c=>[norm(c),c])];
   const existing=[...$('categories').querySelectorAll('[data-cat]')];
   if(existing.length===options.length&&existing.every((b,i)=>b.dataset.cat===options[i][0]&&b.textContent===options[i][1])){
-    for(const b of existing){const active=b.dataset.cat===selected;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))}
+    for(const b of existing){const active=b.dataset.cat===selected;b.classList.toggle('active',active);if(b.tagName==='BUTTON')b.setAttribute('aria-pressed',String(active));else if(active)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current')}
     return;
   }
-  $('categories').innerHTML=options.map(([id,label])=>'<button class="chip '+(selected===id?'active':'')+'" type="button" data-cat="'+esc(id)+'" aria-pressed="'+String(selected===id)+'">'+esc(label)+'</button>').join('');
+  const routes={bolsos:'/bolsos/',carteras:'/carteras/',mochilas:'/mochilas/'};
+  $('categories').innerHTML=options.map(([id,label])=>routes[id]?'<a class="chip '+(selected===id?'active':'')+'" href="'+routes[id]+'" data-cat="'+esc(id)+'"'+(selected===id?' aria-current="true"':'')+'>'+esc(label)+'</a>':'<button class="chip '+(selected===id?'active':'')+'" type="button" data-cat="'+esc(id)+'" aria-pressed="'+String(selected===id)+'">'+esc(label)+'</button>').join('');
 }
 function filtered(){
   const search=norm($('search').value),sort=$('sort').value;
@@ -207,8 +208,7 @@ async function loadCatalog(){
     products=data||[];loadingError=false;updateCatalogSchema();
     buildCategories();
     if(!initialDeepLinkHandled){initialDeepLinkHandled=true;const id=new URLSearchParams(location.search).get('producto');if(id&&productById(id))openDetail(id,false)}
-  }catch(error){console.error('Catálogo Timeless TCO',error);loadingError=true}
-  clearTimeout(timeout);catalogLoading=false;$('grid').setAttribute('aria-busy','false');if(status)status.textContent='';
+  }catch(error){console.error('Catálogo Timeless TCO',error);loadingError=true}finally{clearTimeout(timeout);catalogLoading=false;$('grid').setAttribute('aria-busy','false');if(status)status.textContent=''}
   if(loadingError&&$('grid').querySelector('.card')){
     $('count').textContent='Colección disponible · consulta precios y stock por WhatsApp';
     if(status)status.textContent='No se pudo actualizar el inventario en línea.';
@@ -222,7 +222,7 @@ document.addEventListener('click',event=>{
   const qty=event.target.closest('[data-cart-qty]');if(qty){changeCart(qty.dataset.cartQty,Number(qty.dataset.delta));return}
   const remove=event.target.closest('[data-cart-remove]');if(remove){delete cart[remove.dataset.cartRemove];saveCart();renderCart();return}
   const retry=event.target.closest('#retry-catalog');if(retry){loadingError=false;loadCatalog();return}
-  const c=event.target.closest('[data-cat]');if(c){selected=c.dataset.cat;buildCategories();render();return}
+  const c=event.target.closest('[data-cat]');if(c){if(catalogLoading||loadingError||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;event.preventDefault();selected=c.dataset.cat;buildCategories();render();return}
   const d=event.target.closest('[data-detail]');if(d){openDetail(d.dataset.detail);return}
   const m=event.target.closest('[data-modal-index]');if(m){showImage(Number(m.dataset.modalIndex));return}
   const t=event.target.closest('.thumb[data-image]');if(t){const card=t.closest('.card'),img=card?.querySelector('.main-img');if(img&&t.dataset.image){const url=t.dataset.image;if(img.getAttribute('src')===url)return;const token=(img.thumbRevision||0)+1;img.thumbRevision=token;const probe=new Image();probe.src=url;const commit=()=>{if(img.thumbRevision!==token||!img.isConnected)return;img.src=url;img.alt=t.dataset.alt||img.alt;card.querySelectorAll('.thumb').forEach(b=>b.classList.toggle('active',b===t))};if(probe.complete&&probe.naturalWidth)commit();else if(typeof probe.decode==='function')probe.decode().then(commit).catch(()=>{});else probe.onload=commit;}}
