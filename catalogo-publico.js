@@ -33,7 +33,9 @@ function messageLink(p){
   const lines=['Hola Timeless TCO, quisiera consultar por esta cartera:',p.name,'Código: '+(p.sku||'Sin código'),'Precio publicado: '+(itemPrice(p)>0?money(itemPrice(p)):'A consultar'),'Enlace: '+productLink(p),'¿Está disponible? ¿Cuánto cuesta el despacho a mi comuna y qué formas de pago aceptan?'];
   return 'https://wa.me/'+whatsapp+'?text='+encodeURIComponent(lines.join('\n'));
 }
-function productLink(p){return 'https://www.timelesstco.cl/producto/'+encodeURIComponent(p.id)+'/';}
+const PRODUCT_SLUGS=Object.freeze({"a80e2f3d-84ba-433b-b91a-ddff8a07cfc7":"bolso-con-flecos-espiritu-boho-camel","2856d071-b34f-4f33-8550-1222fa82fabc":"bolso-con-flecos-espiritu-boho-negro","baaeee94-c196-45bf-b816-aa211e332d28":"bolso-hobo-silueta-retro-azul","36a10d0c-5492-4c78-b2e9-dd0a8ba2cefc":"bolso-hobo-silueta-retro-beige","80cae2c2-4575-4125-ac19-e25500cfd7b1":"bolso-hobo-silueta-retro-verde-oliva","41d67770-4de5-4fca-a055-620874adf444":"cartera-animal-print-instinto-felino-leopardo","c5657ae2-973a-415c-b363-e24b17003d98":"cartera-borgona-clasica-burdeo","f15fe3ea-f773-4095-9065-0f1683b8f41b":"cartera-hobo-esencia-urbana-arena-crema","08dd9c3f-1a03-4018-af70-776b3104b02f":"cartera-hobo-esencia-urbana-cafe","c60f2032-5c47-4e2e-91b5-50f52f390ce1":"cartera-hobo-esencia-urbana-negro","2f5a2586-65a2-462c-bb83-0c5199637454":"cartera-misterio-felino-burdeo-chocolate","87fe22ae-005b-4f4b-845d-6186a6729acf":"cartera-misterio-felino-negro-animal-print","baff973e-736f-4b29-b6e4-e6a642b78f57":"cartera-mochila-pulso-urbano-burdeo","1c449152-a5ec-4bb3-9788-d2338bf0ab05":"cartera-mochila-pulso-urbano-negro"});
+const seoPath=p=>PRODUCT_SLUGS[p.id]?'/producto/'+PRODUCT_SLUGS[p.id]+'/':'/?producto='+encodeURIComponent(p.id);
+function productLink(p){return 'https://www.timelesstco.cl'+seoPath(p);}
 function productById(id){return products.find(p=>String(p.id)===String(id));}
 function photoAlt(p,url,index){const row=(p?.product_images||[]).find(r=>r.image_url===url);const custom=String(row?.alt_text||'').trim();return custom&&custom!==p?.name?custom:(p?.name||'Cartera Timeless TCO')+' — fotografía '+(index+1);}
 function showImage(index){
