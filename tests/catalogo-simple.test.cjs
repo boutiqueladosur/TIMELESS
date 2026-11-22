@@ -76,9 +76,9 @@ test('Official Timeless identity appears on website and administration panel',()
   assert.match(shop,/assets\/timeless-mariposa\.svg/);
   assert.match(admin,/assets\/timeless-mariposa\.svg/);
   assert.ok(fs.existsSync('assets/timeless-portada.svg'));
-  assert.ok(fs.existsSync('assets/timeless-mariposa.svg'));
+  assert.ok(fs.existsSync('assets/logo-timeless-dorado-2026.svg'));
   const cover=fs.readFileSync('assets/timeless-portada.svg','utf8');
-  const butterfly=fs.readFileSync('assets/timeless-mariposa.svg','utf8');
+  const butterfly=fs.readFileSync('assets/logo-timeless-dorado-2026.svg','utf8');
   assert.match(cover,/Carteras y accesorios para mujer/);
   assert.match(butterfly,/fill-rule="evenodd"/);
   const style=fs.readFileSync('catalogo-estilo.css','utf8');

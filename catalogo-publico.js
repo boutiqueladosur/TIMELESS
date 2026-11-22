@@ -27,7 +27,7 @@ function photos(p){
     }
     return u.protocol==='https:'?u.href:'';
   }catch{return''}}).filter(Boolean);
-  return urls.length?[...new Set(urls)]:['assets/timeless-mariposa.svg'];
+  return urls.length?[...new Set(urls)]:['assets/logo-timeless-dorado-2026.svg'];
 }
 function messageLink(p){
   const lines=['Hola Timeless TCO, quisiera consultar por esta cartera:',p.name,'Código: '+(p.sku||'Sin código'),'Precio publicado: '+(itemPrice(p)>0?money(itemPrice(p)):'A consultar'),'Enlace: '+productLink(p),'¿Está disponible? ¿Cuánto cuesta el despacho a mi comuna y qué formas de pago aceptan?'];
@@ -77,7 +77,7 @@ function render(){
     const thumbs=list.length>1?'<div class="thumbs">'+list.map((url,i)=>'<button type="button" class="thumb '+(i===0?'active':'')+'" data-image="'+esc(variant(p,url,'catalog'))+'" data-alt="'+esc(photoAlt(p,url,i))+'" aria-label="Fotografía '+(i+1)+' de '+esc(p.name)+'"><img src="'+esc(variant(p,url,'thumb'))+'" width="200" height="200" alt="" loading="lazy" decoding="async"></button>').join('')+'</div>':'<div class="thumbs" aria-hidden="true"></div>';
     return '<article class="card '+(out?'stock-out':'')+'">'
       +'<div class="media">'+(out?'<span class="stock-label">Consultar stock</span>':(p.is_featured?'<span class="feature-label">Destacado</span>':''))
-      +'<img class="main-img" src="'+esc(variant(p,list[0],'catalog'))+'" width="700" height="875" alt="'+esc(list[0]==='assets/timeless-mariposa.svg'?'Fotografía pendiente':photoAlt(p,list[0],0))+'" loading="'+(index<2?'eager':'lazy')+'" fetchpriority="'+(index===0?'high':'auto')+'" decoding="async">'
+      +'<img class="main-img" src="'+esc(variant(p,list[0],'catalog'))+'" width="700" height="875" alt="'+esc(list[0]==='assets/logo-timeless-dorado-2026.svg'?'Fotografía pendiente':photoAlt(p,list[0],0))+'" loading="'+(index<2?'eager':'lazy')+'" fetchpriority="'+(index===0?'high':'auto')+'" decoding="async">'
       +(discount?'<span class="discount">-'+discount+'% oferta</span>':'')
       +'</div>'+thumbs
       +'<div class="body"><div class="category">'+esc(category(p))+'</div><h3>'+esc(p.name)+'</h3><div class="desc">'+esc(p.description||'Una pieza de nuestra colección Timeless TCO.')+'</div>'
