@@ -106,8 +106,20 @@ function reconcileGrid(markup){
     const oldThumbs=[...card.querySelectorAll('.thumb')],newThumbs=[...fresh.querySelectorAll('.thumb')];
     const oldImg=card.querySelector('.main-img'),newImg=fresh.querySelector('.main-img');
     const sameGallery=oldImg&&newImg&&oldThumbs.length===newThumbs.length&&oldThumbs.every((b,i)=>b.dataset.image===newThumbs[i].dataset.image&&b.querySelector('img')?.getAttribute('src')===newThumbs[i].querySelector('img')?.getAttribute('src'))&&(oldThumbs.length||oldImg.getAttribute('src')===newImg.getAttribute('src'));
-    if(!sameGallery){const media=card.querySelector('.media'),thumbs=card.querySelector('.thumbs');if(media)media.replaceWith(fresh.querySelector('.media'));if(thumbs)thumbs.replaceWith(fresh.querySelector('.thumbs'))}
+    if(!sameGallery){
+      // Never discard a visible image while its replacement is still downloading.
+      const media=card.querySelector('.media'),thumbs=card.querySelector('.thumbs');
+      const nextMedia=fresh.querySelector('.media'),nextThumbs=fresh.querySelector('.thumbs');
+      const token=(card.galleryRevision||0)+1;card.galleryRevision=token;
+      const candidates=[...nextMedia.querySelectorAll('img'),...nextThumbs.querySelectorAll('img')];
+      const ready=img=>{const probe=new Image();probe.src=img.getAttribute('src');return typeof probe.decode==='function'?probe.decode():new Promise((resolve,reject)=>{if(probe.complete){probe.naturalWidth?resolve():reject(Error('image unavailable'));return}probe.onload=resolve;probe.onerror=reject})};
+      Promise.all(candidates.map(ready)).then(()=>{
+        if(card.galleryRevision!==token||!card.isConnected)return;
+        if(media)media.replaceWith(nextMedia);if(thumbs)thumbs.replaceWith(nextThumbs);
+      }).catch(()=>{/* Keep the last usable gallery on network failure. */});
+    }
     else{
+      card.galleryRevision=(card.galleryRevision||0)+1;
       for(const sel of ['.stock-label','.feature-label','.discount']){
         const a=card.querySelector(sel),b=fresh.querySelector(sel);
         if(a&&b){if(a.textContent!==b.textContent)a.textContent=b.textContent}
@@ -213,7 +225,7 @@ document.addEventListener('click',event=>{
   const c=event.target.closest('[data-cat]');if(c){selected=c.dataset.cat;buildCategories();render();return}
   const d=event.target.closest('[data-detail]');if(d){openDetail(d.dataset.detail);return}
   const m=event.target.closest('[data-modal-index]');if(m){showImage(Number(m.dataset.modalIndex));return}
-  const t=event.target.closest('.thumb[data-image]');if(t){const card=t.closest('.card'),img=card?.querySelector('.main-img');if(img){img.src=t.dataset.image;img.alt=t.dataset.alt||img.alt;}card?.querySelectorAll('.thumb').forEach(b=>b.classList.toggle('active',b===t))}
+  const t=event.target.closest('.thumb[data-image]');if(t){const card=t.closest('.card'),img=card?.querySelector('.main-img');if(img&&t.dataset.image){const url=t.dataset.image;if(img.getAttribute('src')===url)return;const token=(img.thumbRevision||0)+1;img.thumbRevision=token;const probe=new Image();probe.src=url;const commit=()=>{if(img.thumbRevision!==token||!img.isConnected)return;img.src=url;img.alt=t.dataset.alt||img.alt;card.querySelectorAll('.thumb').forEach(b=>b.classList.toggle('active',b===t))};if(probe.complete&&probe.naturalWidth)commit();else if(typeof probe.decode==='function')probe.decode().then(commit).catch(()=>{});else probe.onload=commit;}}
 });
 $('modal-prev').addEventListener('click',()=>showImage(modalIndex-1));
 $('modal-next').addEventListener('click',()=>showImage(modalIndex+1));
