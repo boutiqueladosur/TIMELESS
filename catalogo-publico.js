@@ -164,7 +164,7 @@ async function loadCatalog(){
   $('retry-catalog')?.remove();render();renderCart();
 }
 document.addEventListener('click',event=>{
-  const add=event.target.closest('[data-cart-add]');if(add){addCart(add.dataset.cartAdd);return}
+  const add=event.target.closest('[data-cart-add]');if(add){if(catalogLoading){return}if(loadingError){const details=add.closest('.card')?.querySelector('.details');if(details)location.href=details.href;return}addCart(add.dataset.cartAdd);return}
   const qty=event.target.closest('[data-cart-qty]');if(qty){changeCart(qty.dataset.cartQty,Number(qty.dataset.delta));return}
   const remove=event.target.closest('[data-cart-remove]');if(remove){delete cart[remove.dataset.cartRemove];saveCart();renderCart();return}
   const retry=event.target.closest('#retry-catalog');if(retry){loadingError=false;loadCatalog();return}
