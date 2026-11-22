@@ -33,7 +33,7 @@ function messageLink(p){
   const lines=['Hola Timeless TCO, quisiera consultar por esta cartera:',p.name,'Código: '+(p.sku||'Sin código'),'Precio publicado: '+(itemPrice(p)>0?money(itemPrice(p)):'A consultar'),'Enlace: '+productLink(p),'¿Está disponible? ¿Cuánto cuesta el despacho a mi comuna y qué formas de pago aceptan?'];
   return 'https://wa.me/'+whatsapp+'?text='+encodeURIComponent(lines.join('\n'));
 }
-function productLink(p){const url=new URL('https://www.timelesstco.cl/');url.searchParams.set('producto',p.id);return url.href;}
+function productLink(p){return 'https://www.timelesstco.cl/producto/'+encodeURIComponent(p.id)+'/';}
 function productById(id){return products.find(p=>String(p.id)===String(id));}
 function photoAlt(p,url,index){const row=(p?.product_images||[]).find(r=>r.image_url===url);const custom=String(row?.alt_text||'').trim();return custom&&custom!==p?.name?custom:(p?.name||'Cartera Timeless TCO')+' — fotografía '+(index+1);}
 function showImage(index){
@@ -83,7 +83,7 @@ function render(){
       +'<div class="body"><div class="category">'+esc(category(p))+'</div><h3>'+esc(p.name)+'</h3><div class="desc">'+esc(p.description||'Una pieza de nuestra colección Timeless TCO.')+'</div>'
       +'<div class="price">'+(regular>price&&price>0?'<span class="old">'+money(regular)+'</span>':'')+'<span class="current">'+(price>0?money(price):'Consultar')+'</span></div>'
       +'<div class="actions">'+(out?'<a class="add" href="'+esc(messageLink(p))+'" target="_blank" rel="noopener noreferrer">Consultar disponibilidad</a>':'<button type="button" class="add" data-cart-add="'+esc(p.id)+'">Agregar al carrito</button>')
-      +'<button type="button" class="details" data-detail="'+esc(p.id)+'" aria-label="Ver detalles de '+esc(p.name)+'">Ver detalles</button></div>'
+      +'<a class="details" href="'+esc(productLink(p))+'" aria-label="Ver detalles de '+esc(p.name)+'">Ver detalles</a></div>'
       +'</div></article>';
   }).join('')||(loadingError?'<div class="loader catalog-error" style="grid-column:1/-1"><p>No pudimos conectar con el catálogo en este momento.</p><button type="button" class="details" id="retry-catalog">Volver a intentar</button></div>':'<div class="loader" style="grid-column:1/-1">No hay productos que coincidan.</div>');
 }
