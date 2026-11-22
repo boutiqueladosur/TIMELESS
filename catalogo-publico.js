@@ -137,7 +137,7 @@ function reconcileGrid(markup){
         }else if(a.textContent!==b.textContent)a.textContent=b.textContent;
       }
     }
-    card.className=fresh.className;
+    if(card.className.trim()!==fresh.className.trim())card.className=fresh.className.trim();
     card.removeAttribute('data-static-card');
     return card;
   });
@@ -205,7 +205,9 @@ async function loadCatalog(){
       .select('id,sku,name,description,price_clp,sale_price_clp,is_featured,is_active,stock,material,color,dimensions,compartments,category_id,categories(name),product_images(image_url,sort_order,is_primary,alt_text,thumb_url,catalog_url,detail_url)')
       .eq('is_active',true).is('archived_at',null).order('is_featured',{ascending:false}).order('name',{ascending:true}).abortSignal(controller.signal);
     if(error)throw error;
-    products=data||[];loadingError=false;updateCatalogSchema();
+    // Preserve the server-rendered order regardless of database collation or response order.
+    const initialRank=new Map([...$('grid').querySelectorAll('[data-product-id]')].map((el,i)=>[el.dataset.productId,i]));
+    products=(data||[]).slice().sort((a,b)=>(initialRank.get(a.id)??Number.MAX_SAFE_INTEGER)-(initialRank.get(b.id)??Number.MAX_SAFE_INTEGER)||String(a.name).localeCompare(String(b.name),'es')||String(a.id).localeCompare(String(b.id)));loadingError=false;updateCatalogSchema();
     buildCategories();
     if(!initialDeepLinkHandled){initialDeepLinkHandled=true;const id=new URLSearchParams(location.search).get('producto');if(id&&productById(id))openDetail(id,false)}
   }catch(error){console.error('Catálogo Timeless TCO',error);loadingError=true}finally{clearTimeout(timeout);catalogLoading=false;$('grid').setAttribute('aria-busy','false');if(status)status.textContent=''}
