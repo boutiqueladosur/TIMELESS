@@ -4,12 +4,13 @@ const assert=require('node:assert/strict');
 const {readFileSync,existsSync}=require('node:fs');
 const vm=require('node:vm');
 const admin=readFileSync('admin.html','utf8');
+const adminCode=readFileSync('admin-catalog.js','utf8');
 const shop=readFileSync('index.html','utf8');
 const catalog=readFileSync('catalogo-publico.js','utf8');
 
 test('The public site is a simple WhatsApp catalog, not a checkout',()=>{
   assert.match(shop,/catalogo-publico\.js/);
-  assert.match(shop,/id="whatsapp-header"/);
+  assert.match(shop,/id="whatsapp-link"/);
   assert.doesNotMatch(shop,/id="order-form"|id="cart-modal"|checkout\.js/);
   assert.doesNotMatch(catalog,/create-order|create_order_atomic|inventory_reservations/);
   assert.match(catalog,/messageLink/);
@@ -18,17 +19,17 @@ test('The public site is a simple WhatsApp catalog, not a checkout',()=>{
 
 test('Catalog retrieves product details and product images but no cost fields',()=>{
   assert.match(catalog,/\.from\('products'\)/);
-  assert.match(catalog,/product_images\(image_url,sort_order,is_primary\)/);
+  assert.match(catalog,/product_images\(image_url,sort_order,is_primary,alt_text,thumb_url,catalog_url,detail_url\)/);
   assert.doesNotMatch(catalog,/average_cost_clp|unit_cost_clp|supplier_id/);
 });
 
 test('The minimal panel supports photos, prices and inventory movements',()=>{
-  for(const key of ['id="images"','id="price"','id="sale-price"','id="name"','id="description"','id="products"','id="save-whatsapp"','id="stock-quantity"','id="apply-stock"'])assert.ok(admin.includes(key),key);
-  assert.match(admin,/uploadImages/);
-  assert.match(admin,/async function adjustStock/);
-  assert.match(admin,/db\.from\('inventory_movements'\)\.insert/);
-  assert.match(admin,/Number\.isSafeInteger\(quantity\)/);
-  assert.match(admin,/aal\?\.currentLevel!=='aal2'/);
+  for(const key of ['id="photo-1"','id="photo-2"','id="photo-3"','id="photo-4"','id="pending-images"','id="price"','id="sale-price"','id="name"','id="description"','id="products"','id="save-whatsapp"','id="stock-quantity"','id="apply-stock"'])assert.ok(admin.includes(key),key);
+  assert.match(adminCode,/uploadImages/);
+  assert.match(adminCode,/async function adjustStock/);
+  assert.match(adminCode,/db\.from\('inventory_movements'\)\.insert/);
+  assert.match(adminCode,/Number\.isSafeInteger\(quantity\)/);
+  assert.match(adminCode,/aal\?\.currentLevel!=='aal2'/);
   assert.match(admin,/id="stock"[^>]+readonly/);
 });
 
@@ -45,10 +46,10 @@ test('Admin keeps MFA and idle-session security',()=>{
 test('All inline scripts parse correctly',()=>{
   for(const source of [admin,shop]){
     for(const [,attrs,body] of source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)){
-      if(!/\bsrc\s*=/.test(attrs)&&body.trim())assert.doesNotThrow(()=>new vm.Script(body));
+      if(!/\bsrc\s*=/.test(attrs)&&body.trim())assert.doesNotThrow(()=>/application\/ld\+json/.test(attrs)?JSON.parse(body):new vm.Script(body));
     }
   }
-  assert.doesNotThrow(()=>new vm.Script(catalog));
+  for(const file of ['catalogo-publico.js','admin-catalog.js','security-admin.js','site-content.js','seo-pages.js'])assert.doesNotThrow(()=>new vm.Script(readFileSync(file,'utf8')));
 });
 
 test('Editorial catalog has product cards, responsive layout and accessible product detail dialog',()=>{
@@ -72,15 +73,15 @@ test('Storefront does not disclose internal purchase costs or store credentials'
 
 test('Official Timeless identity appears on website and administration panel',()=>{
   const fs=require('node:fs');
-  assert.match(shop,/assets\/timeless-portada\.svg/);
-  assert.match(shop,/assets\/timeless-mariposa\.svg/);
-  assert.match(admin,/assets\/timeless-mariposa\.svg/);
-  assert.ok(fs.existsSync('assets/timeless-portada.svg'));
-  assert.ok(fs.existsSync('assets/logo-timeless-dorado-2026.svg'));
-  const cover=fs.readFileSync('assets/timeless-portada.svg','utf8');
-  const butterfly=fs.readFileSync('assets/logo-timeless-dorado-2026.svg','utf8');
-  assert.match(cover,/Carteras y accesorios para mujer/);
-  assert.match(butterfly,/fill-rule="evenodd"/);
+  assert.match(shop,/assets\/portada-decorativa-tco\.svg/);
+  assert.match(shop,/assets\/logo-timeless-sincronizado\.svg/);
+  assert.match(admin,/assets\/logo-timeless-dorado-2026\.svg/);
+  assert.ok(fs.existsSync('assets/portada-decorativa-tco.svg'));
+  assert.ok(fs.existsSync('assets/logo-timeless-sincronizado.svg'));
+  const cover=fs.readFileSync('assets/portada-decorativa-tco.svg','utf8');
+  const butterfly=fs.readFileSync('assets/logo-timeless-sincronizado.svg','utf8');
+  assert.match(cover,/<svg\b/);
+  assert.match(butterfly,/<image\b[^>]*data:image\/webp;base64,/);
   const style=fs.readFileSync('catalogo-estilo.css','utf8');
   assert.match(style,/\.hero-banner/);
   assert.match(style,/\.brand-symbol/);
@@ -119,28 +120,39 @@ test('Honest WhatsApp process, buying guidance and updated privacy',()=>{
 test('Public storefront has a single semantic H1 and canonical URL',()=>{
   assert.equal((shop.match(/<h1(?:\s|>)/g)||[]).length,1);
   assert.match(shop,/rel="canonical"/);
-  assert.match(shop,/TIMELESS TCO: carteras y accesorios/);
+  assert.match(shop,/<h1[^>]*>Carteras, bolsos y mochilas para mujer<\/h1>/);
 });
 
 test('Admin requires MFA and protects against partial image upload failures',()=>{
-  assert.match(admin,/async function requireMfa/);
-  assert.match(admin,/currentLevel!=='aal2'/);
-  assert.match(admin,/async function rollbackUploadedImages/);
-  assert.match(admin,/await rollbackUploadedImages\(productId,created\)/);
-  assert.match(admin,/if\(!metadataUpdated&&createdImages\.length\)/);
-  assert.match(admin,/\{\.\.\.payload,is_active:false\}/);
-  assert.match(admin,/validateImageFiles\(files\)/);
-  assert.match(admin,/data-primary/);
-  assert.match(admin,/db\.rpc\('set_product_primary_image'/);
-  assert.doesNotMatch(admin,/update\(\{is_primary:false\}\)\.eq\('product_id'/);
+  assert.match(adminCode,/async function requireMfa/);
+  assert.match(adminCode,/currentLevel!=='aal2'/);
+  assert.match(adminCode,/async function rollbackUploadedImages/);
+  assert.match(adminCode,/await rollbackUploadedImages\(productId,created\)/);
+  assert.match(adminCode,/if\(!metadataUpdated&&createdImages\.length\)/);
+  assert.match(adminCode,/\{\.\.\.payload,is_active:false\}/);
+  assert.match(adminCode,/validateImageFiles\(files\)/);
+  assert.match(adminCode,/data-primary/);
+  assert.match(adminCode,/db\.rpc\('set_product_primary_image'/);
+  assert.doesNotMatch(adminCode,/update\(\{is_primary:false\}\)\.eq\('product_id'/);
 });
 test('Admin can recover from a failed catalog load',()=>{
   assert.match(admin,/id="retry-load"/);
   assert.match(admin,/id="admin-retry"/);
-  assert.match(admin,/loadAll\(\)\.catch/);
-  assert.match(admin,/admin-retry'\)\.classList\.remove\('hidden'\)/);
+  assert.match(adminCode,/loadAll\(\)\.catch/);
+  assert.match(adminCode,/admin-retry'\)\.classList\.remove\('hidden'\)/);
 });
 test('Catalog has a retry action for Supabase failures',()=>{
   assert.match(catalog,/id="retry-catalog"/);
   assert.match(catalog,/loadCatalog\(\);return/);
+});
+
+test('Single category navigation, accessible network completion and stable galleries',()=>{
+ assert.equal((shop.match(/id="categories"/g)||[]).length,1);
+ assert.match(shop,/<nav[^>]*id="categories"/);
+ assert.match(shop,/<div id="grid"[^>]*aria-busy="false"/);
+ assert.match(catalog,/finally\{clearTimeout\(timeout\);catalogLoading=false;\$\('grid'\)\.setAttribute\('aria-busy','false'\)/);
+ assert.match(catalog,/if\(syncExistingCards\(rows\)\)return/);
+ const slugs=[...shop.matchAll(/class="details" href="\/producto\/([^/]+)\//g)].map(x=>x[1]);
+ assert.ok(slugs.length>0);
+ for(const slug of slugs)assert.ok(existsSync('producto/'+slug+'/index.html'));
 });
