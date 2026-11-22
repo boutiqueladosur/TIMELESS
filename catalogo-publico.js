@@ -80,6 +80,8 @@ function render(){
   const rows=filtered();
   const countLabel=rows.length+' producto'+(rows.length===1?'':'s');if($('count').textContent!==countLabel)$('count').textContent=countLabel;
   const filterLabel=selected==='todos'?'':'Filtro activo';if($('filter-label').textContent!==filterLabel)$('filter-label').textContent=filterLabel;
+  // A matching static gallery is already rendered: do not parse or build any image nodes.
+  if(syncExistingCards(rows))return;
   const markup=rows.map((p,index)=>{
     const list=photos(p),price=itemPrice(p),regular=Number(p.price_clp)||0,out=Number(p.stock||0)<=0;
     const discount=price>0&&regular>price?Math.round((1-price/regular)*100):0;
@@ -96,6 +98,32 @@ function render(){
       +'</div></article>';
   }).join('')||(loadingError?'<div class="loader catalog-error" style="grid-column:1/-1"><p>No pudimos conectar con el catálogo en este momento.</p><button type="button" class="details" id="retry-catalog">Volver a intentar</button></div>':'<div class="loader" style="grid-column:1/-1">No hay productos que coincidan.</div>');
   reconcileGrid(markup);
+}
+function syncExistingCards(rows){
+  const grid=$('grid'),cards=[...grid.children];
+  if(cards.length!==rows.length||!rows.length||!cards.every((c,i)=>c.dataset.productId===String(rows[i].id)))return false;
+  // Compare all gallery URLs before touching any existing card.
+  const plans=rows.map((p,i)=>{
+    const card=cards[i],list=photos(p),thumbs=[...card.querySelectorAll('.thumb')],img=card.querySelector('.main-img');
+    const equal=(a,b)=>{try{return new URL(a,location.href).href===new URL(b,location.href).href}catch{return false}};
+    const same=img&&((list.length>1&&thumbs.length===list.length&&thumbs.every((b,k)=>equal(b.dataset.image,variant(p,list[k],'catalog'))&&equal(b.querySelector('img')?.getAttribute('src'),variant(p,list[k],'thumb'))))||(list.length===1&&!thumbs.length&&equal(img.getAttribute('src'),variant(p,list[0],'catalog'))));
+    return {p,card,same};
+  });
+  if(plans.some(x=>!x.same))return false;
+  for(const {p,card} of plans){
+    const set=(selector,value)=>{const el=card.querySelector(selector);if(el&&el.textContent!==String(value))el.textContent=value};
+    set('.category',category(p));set('h3',p.name);set('.desc',p.description||'Una pieza de nuestra colección Timeless TCO.');
+    const price=itemPrice(p),regular=Number(p.price_clp)||0,out=Number(p.stock||0)<=0,discount=price>0&&regular>price?Math.round((1-price/regular)*100):0;
+    set('.current',price>0?money(price):'Consultar');
+    const old=card.querySelector('.old');if(regular>price&&price>0){if(old)set('.old',money(regular));else{const span=document.createElement('span');span.className='old';span.textContent=money(regular);card.querySelector('.price').prepend(span)}}else old?.remove();
+    for(const [cls,label] of [['stock-label',out?'Consultar stock':''],['feature-label',!out&&p.is_featured?'Destacado':''],['discount',discount?'-'+discount+'% oferta':'']]){
+      const node=card.querySelector('.'+cls);if(label){if(node){if(node.textContent!==label)node.textContent=label}else{const span=document.createElement('span');span.className=cls;span.textContent=label;card.querySelector('.media').append(span)}}else node?.remove();
+    }
+    const add=card.querySelector('.add');if(add&&(out?add.tagName!=='A':add.tagName!=='BUTTON')){const next=document.createElement(out?'a':'button');next.className='add';if(out){next.href=messageLink(p);next.target='_blank';next.rel='noopener noreferrer';next.textContent='Consultar disponibilidad'}else{next.type='button';next.dataset.cartAdd=p.id;next.textContent='Agregar al carrito'}add.replaceWith(next)}else if(out&&add&&add.href!==messageLink(p))add.href=messageLink(p);
+    const link=card.querySelector('.details');if(link&&link.href!==productLink(p))link.href=productLink(p);
+    card.classList.toggle('stock-out',out);
+  }
+  return true;
 }
 function reconcileGrid(markup){
   const grid=$('grid'),template=document.createElement('template');template.innerHTML=markup;
