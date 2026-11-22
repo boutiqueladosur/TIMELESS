@@ -67,7 +67,7 @@ function filtered(){
   return rows;
 }
 function render(){
-  if(catalogLoading)return;
+  if(catalogLoading||(loadingError&&$('grid').querySelector('.card')))return;
   const rows=filtered();
   $('count').textContent=rows.length+' producto'+(rows.length===1?'':'s');
   $('filter-label').textContent=selected==='todos'?'':'Filtro activo';
@@ -152,7 +152,14 @@ async function loadCatalog(){
     buildCategories();
     if(!initialDeepLinkHandled){initialDeepLinkHandled=true;const id=new URLSearchParams(location.search).get('producto');if(id&&productById(id))openDetail(id,false)}
   }catch(error){console.error('Catálogo Timeless TCO',error);loadingError=true}
-  clearTimeout(timeout);catalogLoading=false;$('grid').setAttribute('aria-busy','false');if(status)status.textContent='';render();renderCart();
+  clearTimeout(timeout);catalogLoading=false;$('grid').setAttribute('aria-busy','false');if(status)status.textContent='';
+  if(loadingError&&$('grid').querySelector('.card')){
+    $('count').textContent='Colección disponible · consulta precios y stock por WhatsApp';
+    if(status)status.textContent='No se pudo actualizar el inventario en línea.';
+    if(!$('retry-catalog')){const retry=document.createElement('button');retry.type='button';retry.id='retry-catalog';retry.className='details';retry.textContent='Actualizar catálogo';$('count').after(retry);}
+    return;
+  }
+  $('retry-catalog')?.remove();render();renderCart();
 }
 document.addEventListener('click',event=>{
   const add=event.target.closest('[data-cart-add]');if(add){addCart(add.dataset.cartAdd);return}
