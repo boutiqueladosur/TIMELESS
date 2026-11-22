@@ -7,7 +7,14 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const norm=s=>String(s??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 let products=[],selected='todos',whatsapp='56935707722',loadingError=false,modalProduct=null,modalImages=[],modalIndex=0,initialDeepLinkHandled=false,catalogLoading=true;
 const itemPrice=p=>p.sale_price_clp==null?Number(p.price_clp)||0:Number(p.sale_price_clp);
-const category=p=>p.categories?.name||'Colección';
+const category=p=>{
+ const raw=String(p.categories?.name||'').trim();
+ const key=norm(raw);
+ if(['bolso','bolsos','bolso hobo','bolsos hobo'].includes(key))return 'Bolsos';
+ if(['cartera','carteras'].includes(key))return 'Carteras';
+ if(['mochila','mochilas'].includes(key))return 'Mochilas';
+ return raw||(/\bhobo\b/i.test(p.name||'')?'Bolsos':/\bmochila\b/i.test(p.name||'')?'Mochilas':'Carteras');
+};
 function variant(p,url,kind){const row=(p?.product_images||[]).find(r=>r.image_url===url);try{const u=new URL(row?.[kind+'_url']);return u.origin==='https://nfphzvcwxyfkbucwwlcx.supabase.co'&&u.pathname.startsWith('/storage/v1/object/public/product-images/')?u.href:url}catch{return url}}
 function photos(p){
   const rows=[...(p.product_images||[])].sort((a,b)=>Number(b.is_primary)-Number(a.is_primary)||(Number(a.sort_order)||0)-(Number(b.sort_order)||0));
@@ -134,7 +141,7 @@ async function loadContact(){
   render();renderCart();
 }
 async function loadCatalog(){
-  catalogLoading=true;$('grid').setAttribute('aria-busy','true');
+  catalogLoading=true;const status=$('loader');if(status)status.textContent='Actualizando colección…';$('grid').setAttribute('aria-busy','true');
   const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),15000);
   try{
     const {data,error}=await db.from('products')
@@ -145,13 +152,13 @@ async function loadCatalog(){
     buildCategories();
     if(!initialDeepLinkHandled){initialDeepLinkHandled=true;const id=new URLSearchParams(location.search).get('producto');if(id&&productById(id))openDetail(id,false)}
   }catch(error){console.error('Catálogo Timeless TCO',error);loadingError=true}
-  clearTimeout(timeout);catalogLoading=false;$('grid').setAttribute('aria-busy','false');$('loader')?.remove();render();renderCart();
+  clearTimeout(timeout);catalogLoading=false;$('grid').setAttribute('aria-busy','false');if(status)status.textContent='';render();renderCart();
 }
 document.addEventListener('click',event=>{
   const add=event.target.closest('[data-cart-add]');if(add){addCart(add.dataset.cartAdd);return}
   const qty=event.target.closest('[data-cart-qty]');if(qty){changeCart(qty.dataset.cartQty,Number(qty.dataset.delta));return}
   const remove=event.target.closest('[data-cart-remove]');if(remove){delete cart[remove.dataset.cartRemove];saveCart();renderCart();return}
-  const retry=event.target.closest('#retry-catalog');if(retry){loadingError=false;$('loader')?.remove();$('grid').innerHTML='<div class="loader" role="status">Reconectando con el catálogo…</div>';loadCatalog();return}
+  const retry=event.target.closest('#retry-catalog');if(retry){loadingError=false;loadCatalog();return}
   const c=event.target.closest('[data-cat]');if(c){selected=c.dataset.cat;buildCategories();render();return}
   const d=event.target.closest('[data-detail]');if(d){openDetail(d.dataset.detail);return}
   const m=event.target.closest('[data-modal-index]');if(m){showImage(Number(m.dataset.modalIndex));return}
