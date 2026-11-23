@@ -38,6 +38,9 @@ test('All commercial products have unique canonical and coherent structured data
     assert.equal(breadcrumbs.itemListElement[0].item,BASE);
     assert.equal(breadcrumbs.itemListElement[2].item,canonical);
     assert.ok(product.image?.length>0,file+' missing images');
+    assert.equal(product.offers?.hasMerchantReturnPolicy?.['@type'],'MerchantReturnPolicy',file+' missing return policy');
+    assert.equal(product.offers.hasMerchantReturnPolicy.applicableCountry,'CL',file+' return country');
+    assert.equal(product.offers.hasMerchantReturnPolicy.merchantReturnDays,10,file+' return period');
   }
 });
 test('Legacy UUID product URLs remain noindex and canonical to named page',()=>{
