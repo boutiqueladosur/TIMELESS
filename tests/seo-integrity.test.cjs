@@ -38,6 +38,11 @@ test('All commercial products have unique canonical and coherent structured data
     assert.equal(breadcrumbs.itemListElement[0].item,BASE);
     assert.equal(breadcrumbs.itemListElement[2].item,canonical);
     assert.ok(product.image?.length>0,file+' missing images');
+    assert.equal(product.offers.shippingDetails?.['@type'],'OfferShippingDetails',file+' shipping type');
+    assert.equal(product.offers.shippingDetails?.shippingDestination?.addressCountry,'CL',file+' shipping coverage');
+    assert.ok(/cotización individual/.test(product.offers.shippingDetails.description),file+' quoted dispatch');
+    assert.ok(!('shippingRate' in product.offers.shippingDetails),file+' cannot invent rate');
+    assert.ok(!('deliveryTime' in product.offers.shippingDetails),file+' cannot invent delivery time');
     assert.equal(product.offers?.hasMerchantReturnPolicy?.['@type'],'MerchantReturnPolicy',file+' missing return policy');
     assert.equal(product.offers.hasMerchantReturnPolicy.applicableCountry,'CL',file+' return country');
     assert.equal(product.offers.hasMerchantReturnPolicy.merchantReturnDays,10,file+' return period');
@@ -52,4 +57,12 @@ test('Legacy UUID product URLs remain noindex and canonical to named page',()=>{
     assert.match(html,/<meta name="robots" content="noindex,follow">/,file);
     assert.match(html,/<link rel="canonical" href="https:\/\/www\.timelesstco\.cl\/producto\//,file);
   }
+});
+
+test('Dynamic Product markup preserves shipping and returns without invented prices',()=>{
+  const js=fs.readFileSync('seo-pages.js','utf8');
+  assert.match(js,/shippingDetails:\{'@type':'OfferShippingDetails'/);
+  assert.match(js,/addressCountry:'CL'/);
+  assert.match(js,/hasMerchantReturnPolicy:\{'@type':'MerchantReturnPolicy'/);
+  assert.doesNotMatch(js,/shippingRate:\{'@type':'MonetaryAmount'/);
 });
